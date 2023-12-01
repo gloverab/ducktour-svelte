@@ -1,1 +1,5 @@
-// Reexport your entry components here
+import DuckTour from './Tour.svelte';
+
+export {
+  DuckTour
+}

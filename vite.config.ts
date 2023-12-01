@@ -1,6 +1,10 @@
 import { sveltekit } from '@sveltejs/kit/vite';
-import { defineConfig } from 'vite';
+import icons from 'unplugin-icons/vite';
+import kitDocs from '@svelteness/kit-docs/node';
 
-export default defineConfig({
-	plugins: [sveltekit()]
-});
+/** @type {import('vite').UserConfig} */
+const config = {
+  plugins: [icons({ compiler: 'svelte' }), kitDocs(), sveltekit()],
+};
+
+export default config;
