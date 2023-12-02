@@ -6,12 +6,16 @@ export interface IAppDetailsPrivate {
 export interface IAppearancePrivate {
   defaultPaddingX: number
   defaultPaddingY: number
+  infoBox: {
+    padding: number
+  }
 }
 
 export interface IBehaviorPrivate {
   animate: boolean
   animationDuration: number
   lockScroll: boolean
+  scrollCurve: (t: number) => number
   scrollType: ScrollBehavior
   scrollTimeoutDuration: number
   scrollYSimilarityThreshold: number

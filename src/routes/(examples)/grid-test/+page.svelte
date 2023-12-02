@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { DisplayOn } from '$lib/types/enums.js';
 	import Tour from '../../../lib/Tour.svelte'
 
 	let showWalkthrough = true
@@ -33,13 +34,13 @@
 			} with random text length. ${generateString(getRandomInt(10, 200))}`,
 			buttonText: 'Next',
 			id: `grid-item-${i}`,
-			displayOn: 'both'
+			displayOn: DisplayOn.Both
 		}
 	})
 </script>
 
 <div class="
-	ducktour--w-screen
+	ducktour--w-full
 	ducktour--grid
 	ducktour--grid-cols-3"
 >
@@ -66,6 +67,16 @@
 {/if}
 
 <style global>
+	*, *::before, *::after {
+		-webkit-box-sizing: border-box; /* Safari/Chrome, other WebKit */
+		-moz-box-sizing: border-box;    /* Firefox, other Gecko */
+		box-sizing: border-box;         /* Opera/IE 8+ */
+	}
+
+	.ducktour--h-200 {
+		height: 600px;
+	}
+
 	.ducktour--grid {
 		display: -ms-grid;
 		display: grid;

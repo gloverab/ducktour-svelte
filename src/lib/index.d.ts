@@ -1,10 +1,10 @@
-import { IAppDetails, ISteps } from './public-types'
-import { IAppearance } from './public-types'
-import { IBehavior } from './public-types'
+import { IAppDetails, IStep, IAppearance, IBehavior } from './types/public'
+import { DisplayOn } from './types/enums'
 	
 export {
 	IAppDetails,
 	IAppearance,
 	IBehavior,
-	ISteps
+	IStep,
+	DisplayOn
 }

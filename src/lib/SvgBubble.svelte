@@ -119,7 +119,6 @@
 	// }
 
 	const animate = () => {
-		console.log('animate with: ',valuesToUse)
 		fromValues = !show ? initialValues : toValues
 		const maxOffsetRight = valuesToUse.w - baseCaretR * 2
 		const useMaxRight = valuesToUse.caretOffset > maxOffsetRight

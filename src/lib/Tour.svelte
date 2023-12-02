@@ -5,12 +5,12 @@
 </script>
 
 <script lang="ts">
-	import type { IAppDetailsPrivate, IAppearancePrivate, IBehaviorPrivate } from "./private-types.js";
+	import type { IAppDetailsPrivate, IAppearancePrivate, IBehaviorPrivate } from "./types/private.ts";
   import LockScroll from "./LockScroll.svelte"
   import SvgBubble from "./SvgBubble.svelte"
 	import { defaultAppDetails, defaultAppearance, defaultBehavior } from "./defaults.js";
-	import { AutoScrollTypes, CaretPositioning, InfoPositionsX, InfoPositionsY, determineScrollDown, getDesktopSteps, getInfoTranslateX, getInfoTranslateY, getMobileSteps, getTargetInfoBoxPositioning, getTargetItemLocation } from "./helpers.js";
-	import type { IStep } from "./public-types.js";
+	import { AutoScrollTypes, CaretPositioning, InfoPositionsX, InfoPositionsY, determineScrollDown, getDesktopSteps, getInfoTranslateX, getInfoTranslateY, getMobileSteps, getTargetInfoBoxPositioning, getTargetItemLocation, smoothScrollTo } from "./helpers.js";
+	import type { IAppearance, IBehavior, IStep } from "./types/public.js";
 	import { onMount } from "svelte";
 
 	// Required Props
@@ -19,23 +19,14 @@
 
 	// Optional Props
 	export let appDetails: IAppDetailsPrivate = defaultAppDetails
-	export let appearance: IAppearancePrivate = defaultAppearance
-  export let behavior: IBehaviorPrivate = defaultBehavior
+	export let appearance: IAppearance = defaultAppearance
+  export let behavior: IBehavior = defaultBehavior
 	export let onComplete: () => void | undefined
 	export let onExitIncomplete: (step: IStep, stepIndex: number, activeSteps: IStep[]) => void | undefined
 
-	$: appDetails = {
-		...appDetails,
-		...defaultAppDetails
-	}
-	$: appearance = {
-		...appearance,
-		...defaultAppearance
-	}
-	$: behavior = {
-		...behavior,
-		...defaultBehavior
-	}
+	let _appDetails: IBehaviorPrivate
+	let _appearance: IAppearancePrivate
+	let _behavior: IBehaviorPrivate
 
 	// Window Data & Element Bindings
 	let mounted = false
@@ -48,15 +39,19 @@
 	// Initial Mount
 	let initialInfoSet = false
 	let infoBoxDisplayed = false
+	let initialized = false
 	let showHighlight = false // previously useHighlightSizes
 	let showInfoBox = false
 	let showInfoBoxContent = false
 
 	// Step Data
-	let activeStepIndex = behavior.startingStep
-	let mostRecentStep = behavior.startingStep
+	let activeStepIndex: number
+	let activeStep: IStep
+	let id: string
+	let hideTextOnStepChange = false
 	
 	// Active Item Data
+	let element: HTMLElement | null
 	let highlightedObjectRect: DOMRect
 	let stepToDisplay: IStep
 
@@ -101,22 +96,69 @@
 	let mousewheelMotionDetected = false
 	let userScroll = false
 	let lastThreeScrolls = [0,0,0]
-	let scrollDirection: 'down' | 'up'
-	let enableAutoScroll = true
+	let activeScrollDirection: 'down' | 'up'
 	let initialScrollNeeded = false
 	let initialScrollTookPlace = false
 	let isAutoScrolling = false
 	let canScrollToPrevious = false
 	let positionBeforeAutoScroll = 0
 	let positionAfterAutoScroll = 0
-	let calledInfoBoxUpdateFromMousewheel = false
-	let calledInfoBoxUpdateFromScroll = false
 	
 	// Reactive
 	$: useMobileSettings = windowW < appDetails.mobileBreakpoint
 	$: stepsToUse = useMobileSettings ? getMobileSteps(steps) : getDesktopSteps(steps)
-	$: activeStep = stepsToUse[activeStepIndex]
-	$: id = useMobileSettings ? activeStep.mobileId || activeStep.id : activeStep.id
+
+	const setCustomizations = () => {
+		appDetails = {
+			...defaultAppDetails,
+			...appDetails,
+	}
+		_appearance = {
+			...defaultAppearance,
+			...appearance
+		}
+		_behavior = {
+			...defaultBehavior,
+			...behavior
+		}
+	}
+
+	const fromWindowTop = (el: HTMLElement) => {
+		return el.getBoundingClientRect().top
+	}
+
+	const fromDocumentTop = (el: HTMLElement) => {
+		return el.getBoundingClientRect().top + scrollY
+	}
+
+	const display = () => {
+		showHighlightTimeout = setTimeout(() => {
+			showHighlight = true
+		}, 500)
+		setTimeout(() => {
+			showInfoBox = true
+		}, 800)
+		setTimeout(() => {
+			showInfoBoxContent = true
+		}, 1200)
+	}
+
+	const initialize = () => {
+		activeStepIndex = _behavior.startingStep
+		activeStep = stepsToUse[activeStepIndex]
+		id = useMobileSettings ? activeStep.mobileId || activeStep.id : activeStep.id
+		highlightValues = {
+			width: `${windowW}px` as string | number,
+			height: `${windowH}px` as string | number,
+			translateX: 0,
+			translateY: 0,
+			roundness: 0,
+			translateYExtra: 0
+		}
+		display()
+		setTimeout(() => updateStep(_behavior.startingStep), 20)
+		initialized = true
+	}
 
 	const handleFinish = () => {
 		if (onComplete) {
@@ -126,22 +168,18 @@
 	}
 
 	const handleClickBack = () => {
-		userScroll = false
-		enableAutoScroll = true
-		mostRecentStep = activeStepIndex
-		activeStepIndex = activeStepIndex - 1
-		setTimeout(changeStep, 10)
+		if (activeStepIndex > 0) {
+			const previousIndex = activeStepIndex - 1
+			updateStep(previousIndex)
+		}
 	}
 
 	const handleClickNext = () => {
-		userScroll = false
 		if (activeStepIndex === stepsToUse.length - 1) {
 			handleFinish()
 		} else {
-			enableAutoScroll = true
-			mostRecentStep = activeStepIndex
-			activeStepIndex = activeStepIndex + 1
-			setTimeout(changeStep, 10)
+			const nextIndex = activeStepIndex + 1
+			updateStep(nextIndex)
 		}
 	}
 
@@ -152,22 +190,23 @@
 	}
 
 	const onScrollSuccess = () => {
-		initialScrollTookPlace = true
-		isAutoScrolling = false
+		setTimeout(() => {
+			initialScrollTookPlace = true
+			isAutoScrolling = false
+		}, 25)
 		setTimeout(() => {
 			showHighlight = true
 		}, 1000)
 	}
 
-	const performAutoScroll = (top: number) => {
-		clearTimeout(showHighlightTimeout)
+	const performAutoScroll = async (top: number) => {
 		positionBeforeAutoScroll = scrollY
-		window.scroll({
-			top: top,
-			behavior: behavior.scrollType
+		await smoothScrollTo(scrollY, top, {
+			duration: _behavior.animationDuration * 2,
+			easingFunction: _behavior.scrollCurve
 		})
 		positionAfterAutoScroll = top
-		setTimeout(onScrollSuccess, behavior.animationDuration)
+		onScrollSuccess()
 	}
 
 	const performAutoScrollToPrevious = () => {
@@ -189,7 +228,8 @@
 
 	const scrollHighlightedItemToTop = () => {
 		canScrollToPrevious = initialScrollTookPlace
-		const scrollAmount = highlightedObjectRect.y - appDetails.headerHeight - appearance.defaultPaddingY
+		const scrollAmount = highlightedObjectRect.y - appDetails.headerHeight - _appearance.defaultPaddingY
+		
 		performAutoScroll(
 			scrollAmount + scrollY
 		)
@@ -224,7 +264,7 @@
 		const determinedScroll = determineScrollDown(
 			activeStepIndex,
 			highlightedObjectRect,
-			behavior.scrollYSimilarityThreshold,
+			_behavior.scrollYSimilarityThreshold,
 			stepsToUse,
 			useMobileSettings,
 			windowH
@@ -234,7 +274,6 @@
 				return scrollHighlightedItemToTop()
 			case AutoScrollTypes.DownCenter:
 				return scrollHighlightedItemToCenter()
-				break
 			case AutoScrollTypes.DownCenterMulti:
 				if (determinedScroll.data) {
 					return scrollHightlightedItemAndNextStepsToCenter(determinedScroll.data)
@@ -247,11 +286,11 @@
 	}
 
 	const autoScrollUp = () => {
-		isAutoScrolling = true
+		// isAutoScrolling = true
 		const itemTopDistanceFromTop = highlightedObjectRect.top
 		const itemHeight = highlightedObjectRect.height
 		const desiredPosition =
-			itemTopDistanceFromTop + itemHeight + appearance.defaultPaddingY - windowH
+			itemTopDistanceFromTop + itemHeight + _appearance.defaultPaddingY - windowH
 
 		performAutoScrollUp(desiredPosition)
 	}
@@ -269,6 +308,7 @@
 				autoScrollUp()
 			}
 		}
+		console.log(scrollAmount)
 		setHighlightValues()
 		updateInfoBoxPosition(scrollAmount)
 
@@ -276,12 +316,11 @@
 
 	const setHighlightValues = () => {
 		if (!activelyScrolling) {
-			console.log('setHighlightValues')
 			highlightValues = {
-				width: highlightedObjectRect.width + appearance.defaultPaddingX * 2,
-				height: highlightedObjectRect.height + appearance.defaultPaddingY * 2,
-				translateX: highlightedObjectRect.x - appearance.defaultPaddingX,
-				translateY: (highlightedObjectRect.y - appearance.defaultPaddingY) + scrollY,
+				width: highlightedObjectRect.width + _appearance.defaultPaddingX * 2,
+				height: highlightedObjectRect.height + _appearance.defaultPaddingY * 2,
+				translateX: highlightedObjectRect.x - _appearance.defaultPaddingX,
+				translateY: (highlightedObjectRect.y - _appearance.defaultPaddingY) + scrollY,
 				roundness: 12,
 				translateYExtra: 0
 			}
@@ -289,11 +328,10 @@
 	}
 
 	const changeInfoBoxPosition = () => {
-			console.log('changeInfoBoxPosition')
 			stepToDisplay = activeStep
 			setTimeout(() => {
-				const infoX = getInfoTranslateX(windowW, infoBoxEl, highlightedObjectRect, infoBoxPositioning.x, appearance.defaultPaddingX)
-				const infoY = getInfoTranslateY(infoBoxEl, highlightedObjectRect, infoBoxPositioning.y, appearance.defaultPaddingY)
+				const infoX = getInfoTranslateX(windowW, infoBoxEl, highlightedObjectRect, infoBoxPositioning.x, _appearance.defaultPaddingX)
+				const infoY = getInfoTranslateY(infoBoxEl, highlightedObjectRect, infoBoxPositioning.y, _appearance.defaultPaddingY)
 				const newInfoBoxValues = {
 					x: infoX.boxX || 0,
 					y: infoY.boxY + scrollY || 0,
@@ -310,56 +348,15 @@
 			}, 1)
 			setTimeout(() => {
 				infoBoxChangingPosition = false
-			}, behavior.animationDuration * .6)
+			}, _behavior.animationDuration * .6)
 	}
 
 	const updateInfoBoxPosition = (scrollAmount: number) => {
-		const obj = document.getElementById(id)
-		if (obj) {
-			console.log('updateInfoBoxPosition')
-			const objRect = obj.getBoundingClientRect()
-			highlightedObjectRect = objRect
-			const targetItemScreenLocation = getTargetItemLocation(windowW, windowH, highlightedObjectRect, scrollAmount)
+		if (element) {
+			highlightedObjectRect = element.getBoundingClientRect()
+			const targetItemScreenLocation = getTargetItemLocation({windowW, windowH, highlightedObjectRect, scrollAmount})
 			infoBoxPositioning = getTargetInfoBoxPositioning(targetItemScreenLocation)
 			changeInfoBoxPosition()
-		}
-	}
-
-	const checkAutoScrollAndUpdatePositions = () => {
-		if (enableAutoScroll) {
-			calculateAutoScroll()
-		} else {
-			setHighlightValues()
-			updateInfoBoxPosition(scrollY)
-		}
-	}
-
-	const getObject = (bypassAutoscroll = false) => {
-		const obj = document.getElementById(id)
-		if (obj) {
-			const objRect = obj.getBoundingClientRect()
-			highlightedObjectRect = objRect
-			if (!bypassAutoscroll) {
-				checkAutoScrollAndUpdatePositions()
-			} else {
-				setHighlightValues()
-				updateInfoBoxPosition(scrollY)
-			}
-		} else {
-			setTimeout(getObject, 200)
-		}
-	}
-
-	const changeStep = () => {
-		if (activeStep && window && windowW) {
-			if (activeStep.action) {
-				activeStep.action()
-				setTimeout(getObject, activeStep.actionTimeout)
-			} else {
-				getObject()
-			}
-		} else {
-			setTimeout(changeStep, 200)
 		}
 	}
 
@@ -367,95 +364,90 @@
 
 	}
 
-	const determineScrollDirection = () => {
+	const determineActiveScrollDirection = () => {
 		lastThreeScrolls.shift()
 		lastThreeScrolls.push(scrollY)
 		if (lastThreeScrolls[2] > lastThreeScrolls[1]) {
-			scrollDirection = 'down'
+			activeScrollDirection = 'down'
 			return
 		}
 		if (lastThreeScrolls[2] < lastThreeScrolls[1]) {
-			scrollDirection = 'up'
+			activeScrollDirection = 'up'
 		}
 	}
 
-	const determineScrollSource = (afterTimeout = false) => {
+	const determineScrollSource = () => {
 		if (isAutoScrolling) {
 			userScroll = false
 		}
 	}
 
+	const finishedScrolling = () => {
+		activelyScrolling = false
+		userScroll = false
+		console.log(isAutoScrolling)
+		if (element && !isAutoScrolling) {
+			updateInfoBoxPosition(0)
+		}
+	}
+
 	const handleScroll = (e: Event) => {
-		determineScrollDirection()
-		determineScrollSource()
 		activelyScrolling = true
 		if (!isAutoScrolling) {
-			enableAutoScroll = false
+			userScroll = true
 		}
+		determineActiveScrollDirection()
+		determineScrollSource()
+		
 		clearTimeout(scrollTimeout)
-		scrollTimeout = setTimeout(() => {
-			activelyScrolling = false
-			if (!mousewheelMotionDetected && !isAutoScrolling && !calledInfoBoxUpdateFromMousewheel) {
-				calledInfoBoxUpdateFromScroll = true
-				updateInfoBoxPosition(scrollY)
-				setTimeout(() => {
-					calledInfoBoxUpdateFromScroll = false
-				}, behavior.animationDuration)
-			}
-		}, 50)
+		scrollTimeout = setTimeout(finishedScrolling, 20)
 	}
 
-	const handleMousewheel = () => {
-		clearTimeout(mousewheelTimeout)
-		mousewheelMotionDetected = true
-
-		mousewheelTimeout = setTimeout(() => {
-			mousewheelMotionDetected = false
-			if (!activelyScrolling && !calledInfoBoxUpdateFromScroll) {
-				calledInfoBoxUpdateFromMousewheel = true
-				updateInfoBoxPosition(scrollY)
-				setTimeout(() => {
-					calledInfoBoxUpdateFromMousewheel = false
-				}, behavior.animationDuration)
-			}
-		}, 10)
+	const checkAutoScrollAndUpdatePositions = () => {
+		calculateAutoScroll()
+		setHighlightValues()
 	}
-	
-	$: translateInfoX = infoBoxValues.x > 18 ? infoBoxValues.x : 18
-	$: translateInfoY = !showHighlight ? windowH / 2 : infoBoxValues.y
-	$: resizingOrScrolling = activelyResizing || activelyScrolling
 
-	$: if (mounted) {
-		highlightValues = {
-			width: `${windowW}px` as string | number,
-			height: `${windowH}px` as string | number,
-			translateX: 0,
-			translateY: 0,
-			roundness: 0,
-			translateYExtra: 0
+	const getObject = () => {
+		if (element) {
+			const rect = element.getBoundingClientRect()
+			highlightedObjectRect = rect
+			checkAutoScrollAndUpdatePositions()
+		} else {
+			setTimeout(getObject, 200)
 		}
-		setTimeout(changeStep, 20)
+	}
+
+	const updateStep = (stepIndex: number) => {
+		activeStepIndex = stepIndex
+		activeStep = stepsToUse[activeStepIndex]
+		id = useMobileSettings ? activeStep.mobileId || activeStep.id : activeStep.id
+		element = document.getElementById(id)
+		if (activeStep.action) {
+			activeStep.action()
+			setTimeout(getObject, activeStep.actionTimeout)
+		} else {
+			getObject()
+		}
+	}
+
+	$: if (mounted && windowW && windowH) {
+		initialize()
 	}
 
 	onMount(() => {
+		setCustomizations()
 		mounted = true
-		showHighlightTimeout = setTimeout(() => {
-			showHighlight = true
-		}, 500)
-		setTimeout(() => {
-			showInfoBox = true
-		}, 800)
-		setTimeout(() => {
-			showInfoBoxContent = true
-		}, 1200)
 	})
-	$: console.log(infoBoxValues)
+
+	$: translateInfoX = infoBoxValues.x > 18 ? infoBoxValues.x : 18
+	$: translateInfoY = !showHighlight ? windowH / 2 : infoBoxValues.y
+	$: resizingOrScrolling = activelyResizing || activelyScrolling
 </script>
 
 <svelte:window
 	on:resize={handleResize}
 	on:scroll={handleScroll}
-	on:mousewheel={handleMousewheel}
 	bind:innerWidth={windowW}
 	bind:innerHeight={windowH}
 	bind:scrollY
@@ -468,7 +460,7 @@
 {/if}
 
 {#if mounted}
-	<div class='relative'>
+	<div class='ducktour--wrapper'>
 		<div class="
 			ducktour--absolute
 			ducktour--w-screen
@@ -477,22 +469,20 @@
 			ducktour--z-2000
 			ducktour--flex
 			ducktour--justify-center"
-			style="height: {mounted ? `${document.body.clientHeight}px` : 'auto'}"
+			style="height: {mounted ? `${document.body.clientHeight}px` : 'auto'};"
 			>
-			<div class='relative ducktour--w-screen h-full'>
-				<svg class='absolute left-0 top-0' width="100%" height="100%">
+			<div class='ducktour--relative ducktour--w-screen ducktour--h-full'>
+				<svg class='ducktour--absolute ducktour--left-0 ducktour--top-0' width="100%" height="100%">
 					<defs>
 						<mask id="mask" x="0" y="0" width="100" height="100">
 							<rect x="0" y="0" width="100%" height="{document.body.clientHeight}px" fill="#fff" />
 							<rect
-								class="ducktour--origin-top-left"
-								class:ducktour--duration-100={activelyScrolling}
-								class:ducktour--duration-500={!activelyScrolling}
+								class="ducktour--origin-top-left ducktour--duration-500"
 								x="0"
 								y="0"
 								width={highlightValues.width}
 								height={highlightValues.height}
-								rx={activeStep.roundedFull ? (highlightedObjectRect.height + appearance.defaultPaddingY * 2) / 2 : highlightValues.roundness}
+								rx={activeStep.roundedFull ? (highlightedObjectRect.height + _appearance.defaultPaddingY * 2) / 2 : highlightValues.roundness}
 								style="transform: translate3d({highlightValues.translateX}px,{highlightValues.translateY + highlightValues.translateYExtra}px,0);"
 							/>
 						</mask>
@@ -540,15 +530,14 @@
 				class:ducktour--opacity-100={!resizingOrScrolling && initialInfoSet &&
 					showHighlight &&
 					showInfoBoxContent}
-				class:ducktour--duration-500={!(resizingOrScrolling)}
-				class:ducktour--duration-100={resizingOrScrolling}
+				class:ducktour--duration-500={true}
 				class="
 					ducktour--min-w-50
 					ducktour--max-w-90
 					ducktour--absolute
 					ducktour--top-3
 					ducktour--left-0
-					ducktour--p-4.5
+					ducktour--p-4
 					ducktour--z-10
 				"
 				style="transform: translate3d({translateInfoX}px,{infoBoxValues.caretPositionY !== CaretPositioning.Top
@@ -562,6 +551,7 @@
 					"
 					class:ducktour--opacity-0={infoBoxChangingPosition}
 					class:ducktour--opacity-100={!infoBoxChangingPosition}
+					class:ducktour--duration-100={infoBoxChangingPosition}
 					class:ducktour--duration-500={!infoBoxChangingPosition}
 					bind:this={infoBoxContentEl}
 				>
@@ -608,9 +598,54 @@
 	</div>
 {/if}
 
+<div class='
+	ducktour--fixed
+	ducktour--top-3
+	ducktour--left-3
+	ducktour--p-2
+	ducktour--bg-white
+	ducktour--z-2000
+	ducktour--databox
+'>
+	<div class='ducktour--mb-3'>
+		<h4>General Data</h4>
+		<p>Window Height: {windowH}</p>
+		<p>Starting Step Index: {behavior.startingStep}</p>
+	</div>
+	<div class='ducktour--mb-3'>
+		<h4>Active Step Data</h4>
+		<p>Active Step Index: {activeStepIndex}</p>
+		<p>Active Step Title: {activeStep?.title}</p>
+	</div>
+	<div class='ducktour--mb-3'>
+		<h4>Scroll Data</h4>
+		<p>scrollY: {scrollY}</p>
+		<p>Actively Scrolling: {activelyScrolling}</p>
+		<p>Mousewheel Motion Detected: {mousewheelMotionDetected}</p>
+		<p>Is Auto Scrolling: {isAutoScrolling}</p>
+		<p>Active Scroll Direction: {activeScrollDirection}</p>
+		<p>Position Before Auto Scroll: {positionBeforeAutoScroll}</p>
+		<p>Position After Auto Scroll: {positionAfterAutoScroll}</p>
+	</div>
+	<div class='ducktour--mb-3'>
+		<h4>Info Box Values:</h4>
+		<p>scrollY: {scrollY}</p>
+		<p>Actively Scrolling: {activelyScrolling}</p>
+		<p>Mousewheel Motion Detected: {mousewheelMotionDetected}</p>
+		<p>Is Auto Scrolling: {isAutoScrolling}</p>
+		<p>Active Scroll Direction: {activeScrollDirection}</p>
+		<p>Position Before Auto Scroll: {positionBeforeAutoScroll}</p>
+		<p>Position After Auto Scroll: {positionAfterAutoScroll}</p>
+	</div>
+</div>
+
 <style global>
 	html {
 		/* scroll-behavior: cubic-bezier(0, 0, 0, 0); */
+	}
+
+	.ducktour--wrapper {
+		overflow-x: hidden;
 	}
 
 	*, *::before, *::after {
@@ -619,8 +654,18 @@
 		box-sizing: border-box;         /* Opera/IE 8+ */
 	}
 
+	p, span, h1, h2, h3, h4, h5, h6 {
+		font-family: 'Helvetica Neue', sans-serif;
+		margin: 0;
+	}
+
 	p {
 		font-size: 10pt;
+		margin: 0;
+	}
+
+	h4 {
+		font-weight: 1.5;
 	}
 
 	.ducktour--fixed {
@@ -635,24 +680,19 @@
 		position: relative;
 	}
 
-	.ducktour--top-0 {
-		top: 0;
-	}
+	.ducktour--top-0 { top: 0; }
+	.ducktour--right-0 { right: 0; }
+	.ducktour--bottom-0 { bottom: 0; }
+	.ducktour--left-0 { left: 0; }
 
-	.ducktour--top-3 {
-		top: .75rem;
-	}
-
-	.ducktour--left-0 {
-		left: 0;
-	}
-
-	.ducktour--left-0 {
-		left: 0;
-	}
+	.ducktour--top-3 { top: .75rem; }
+	.ducktour--right-3 { right: .75rem; }
+	.ducktour--bottom-3 { bottom: .75rem; }
+	.ducktour--left-3 { left: .75rem; }
 
 	.ducktour--w-screen {
 		width: 100vw;
+		max-width:100%;
 	}
 	
 	.ducktour--h-screen {
@@ -673,8 +713,27 @@
 		justify-content: center;
 	}
 
-	.ducktour--p-4\.5 {
-		padding: 1.125rem;
+	.ducktour--justify-between {
+		-webkit-box-pack: center;
+		-ms-flex-pack: center;
+		-webkit-justify-content: center;
+		justify-content: space-between;
+	}
+
+	.ducktour--mb-3 {
+		margin-bottom: .75rem;
+	}
+
+	.ducktour--p-2 {
+		padding: .5rem;
+	}
+
+	.ducktour--p-4 {
+		padding: 1rem;
+	}
+
+	.ducktour--pt-4 {
+		padding-top: 1rem;
 	}
 
 	.ducktour--w-90 {
@@ -695,6 +754,10 @@
 
 	.ducktour--z-10 {
 		z-index: 10;
+	}
+
+	.ducktour--bg-white {
+		background-color: #ffffff;
 	}
 
 
@@ -718,5 +781,16 @@
 		-webkit-transition-duration: 500ms;
 		-o-transition-duration: 500ms;
 		transition-duration: 500ms;
+	}
+
+
+
+	/* Internal */
+
+	.ducktour--databox {
+		background-color: #ffffff;
+		padding: .5rem;
+		border-radius: 12px;
+
 	}
 </style>

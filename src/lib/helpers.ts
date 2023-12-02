@@ -1,4 +1,6 @@
-import type { IStep } from "./public-types.js"
+import { tweened } from "svelte/motion"
+import type { IStep } from "./types/public.js"
+import { cubicOut } from "svelte/easing"
 
 enum ScreenPositions {
   TopLeft = 'top-left',
@@ -13,19 +15,20 @@ enum ScreenPositions {
   Uncalculated = 'uncalculated'
 }
 
-export enum CaretPositioning {
-  Hide,
-  Top,
-  Bottom,
+export enum HighlightPositionX {
   Left,
+  LeftCenter,
+  Center,
+  RightCenter,
   Right
 }
 
-export enum InfoPositionsY {
-  Above,
-  Below,
+export enum HighlightPositionY {
+  Top,
+  TopCenter,
   Center,
-  Uncalculated
+  BottomCenter,
+  Bottom
 }
 
 export enum InfoPositionsX {
@@ -39,6 +42,22 @@ export enum InfoPositionsX {
   Uncalculated
 }
 
+
+export enum InfoPositionsY {
+  Above,
+  Below,
+  Center,
+  Uncalculated
+}
+
+export enum CaretPositioning {
+  Hide,
+  Top,
+  Bottom,
+  Left,
+  Right
+}
+
 export enum AutoScrollTypes {
   DownFull,
   DownCenter,
@@ -48,97 +67,256 @@ export enum AutoScrollTypes {
   None
 }
 
-export const getTargetItemLocation = (
-  windowW: number,
-  windowH: number,
-  highlightedObjectRect: DOMRect,
+export const easeInCubic = (t: number) => t * t * t;
+export const easeOutCubic = (t: number) => --t * t * t + 1;
+export const easeInOutCubic = (t: number) => t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
+export const easeInSine = (t: number) => 1 - Math.cos((t * Math.PI) / 2);;
+export const easeOutSine = (t: number) => Math.sin((t * Math.PI) / 2);
+export const easeInOutSine = (t: number) => -(Math.cos(Math.PI * t) - 1) / 2;
+
+export const smoothScrollTo = (
+  startY: number,
+  y: number,
+  {
+    duration = 400,
+    easingFunction = easeInOutCubic,
+    offset = 0
+  } = {}
+) => {
+  const difference = y - startY;
+  const startTime = performance.now();
+
+  if (y === startY + offset) {
+    return Promise.resolve(undefined);
+  }
+
+  return new Promise((resolve) => {
+    const step = () => {
+      const progress = (performance.now() - startTime) / duration;
+      const amount = easingFunction(progress);
+      window.scrollTo({top: startY + amount * difference - offset});
+      if (progress < 0.99) {
+        window.requestAnimationFrame(step);
+      } else {
+        resolve(undefined);
+      }
+    };
+    step();
+  });
+};
+
+interface ITargetLocationArgs {
+  windowW: number
+  windowH: number
+  highlightedObjectRect: DOMRect
   scrollAmount: number
-): ScreenPositions  => {
-  const useWindowH = windowH - 100
-  // Center Calculations
-  const distanceLeft = highlightedObjectRect.x
-  const distanceRight =
-    windowW - highlightedObjectRect.x - highlightedObjectRect.width
-  const distanceTop = highlightedObjectRect.y - scrollAmount
-  const distanceBottom =
-    useWindowH - highlightedObjectRect.y + scrollAmount - highlightedObjectRect.height
-  const isCenterX = Math.abs(distanceLeft - distanceRight) < 50
-  const isCenterY =
-    Math.abs(distanceTop - distanceBottom) < 50 ||
-    highlightedObjectRect.height > distanceTop + distanceBottom
-
-  // XY Calculations
-  const thresholdRight = windowW / 2 - highlightedObjectRect.width / 2
-  const thresholdBottom = useWindowH / 2 - highlightedObjectRect.height / 2
-  const isRightSide = highlightedObjectRect.x > thresholdRight
-  const isBottom = highlightedObjectRect.y - scrollAmount > thresholdBottom
-
-  if (isCenterX && isCenterY) {
-    return ScreenPositions.Center
-  }
-  if (isCenterX) {
-    return isBottom ? ScreenPositions.BottomCenter : ScreenPositions.TopCenter
-  }
-  if (isCenterY) {
-    return isRightSide ? ScreenPositions.CenterRight : ScreenPositions.CenterLeft
-  }
-  if (isRightSide) {
-    return isBottom ? ScreenPositions.BottomRight : ScreenPositions.TopRight
-  }
-
-  if (!isRightSide) {
-    return isBottom ? ScreenPositions.BottomLeft : ScreenPositions.TopLeft
-  }
-
-  return ScreenPositions.Uncalculated
 }
 
-export const getTargetInfoBoxPositioning = (targetItemScreenLocation: ScreenPositions) => {
+export const getPositionRankingsY = (values: ITargetLocationArgs): {name: string, score: number, position: HighlightPositionY}[] => {
+  const { windowH, highlightedObjectRect, scrollAmount } = values
+  console.log(values)
+  // 100 accounts for controls on bottom
+  const topThreshold = 10
+  const bottomThreshold = 10
+  const centerThreshold = windowH / 5
+  const itemTopFromScreenTop = highlightedObjectRect.top - scrollAmount
+  const itemBottomFromScreenTop = itemTopFromScreenTop + highlightedObjectRect.height
+  const itemBottomFromScreenBottom = windowH - itemBottomFromScreenTop
+
+  const isVeryTop = itemTopFromScreenTop <= topThreshold
+  const isVeryBottom = itemBottomFromScreenBottom <= bottomThreshold
+  const moreRoomOnBottom = itemBottomFromScreenBottom > itemTopFromScreenTop
+
+  const sameRoomOnTopAndBottom = Math.abs(itemBottomFromScreenBottom - itemTopFromScreenTop) < topThreshold
+  const similarRoomOnBottomAndTop = Math.abs(itemTopFromScreenTop - itemBottomFromScreenBottom) < centerThreshold
+  const objectOccupiesMostofScreenHeight = highlightedObjectRect.height > itemTopFromScreenTop + itemBottomFromScreenBottom
+
+  let topScore = 0
+  let bottomScore = 0
+  let centerScore = 0
+
+  if (isVeryTop) { topScore += 2 }
+  if (isVeryBottom) { bottomScore += 2 }
+  if ( similarRoomOnBottomAndTop ) { centerScore += 2 }
+  if (moreRoomOnBottom && !sameRoomOnTopAndBottom) { topScore += 1 }
+  if (!moreRoomOnBottom && !sameRoomOnTopAndBottom) { bottomScore += 1 }
+  if (objectOccupiesMostofScreenHeight) { centerScore +=1 }
+
+  return [
+    {
+      name: 'top',
+      score: topScore,
+      position: HighlightPositionY.Top
+    },
+    {
+      name: 'bottom',
+      score: bottomScore,
+      position: HighlightPositionY.Bottom
+    },
+    {
+      name: 'center',
+      score: centerScore,
+      position: HighlightPositionY.Center
+    },
+  ]
+}
+
+export const getPositionRankingsX = (values: ITargetLocationArgs): {name: string, score: number, position: HighlightPositionX}[] => {
+  const { windowW, highlightedObjectRect } = values
+
+  const leftThreshold = 20
+  const rightThreshold = 20
+  const centerThreshold = windowW / 5
+  const itemLeftFromScreenLeft = highlightedObjectRect.left
+  const itemRightFromScreenLeft = itemLeftFromScreenLeft + highlightedObjectRect.width
+  const itemRightFromScreenRight = windowW - itemRightFromScreenLeft
+
+  const isVeryLeft = itemLeftFromScreenLeft <= leftThreshold
+  const isVeryRight = itemRightFromScreenRight <= rightThreshold
+  const moreRoomOnLeft = itemLeftFromScreenLeft > itemRightFromScreenRight
+
+  const sameRoomOnLeftAndRight = Math.abs(itemRightFromScreenRight - itemLeftFromScreenLeft) < leftThreshold
+  const similarRoomOnLeftAndRight = Math.abs(itemRightFromScreenRight - itemLeftFromScreenLeft) < centerThreshold
+  const objectOccupiesMostofScreenWidth = highlightedObjectRect.width > itemLeftFromScreenLeft + itemRightFromScreenRight
+
+  let leftScore = 0
+  let rightScore = 0
+  let centerScore = 0
+
+  if (isVeryLeft) { leftScore += 2 }
+  if (isVeryRight) { rightScore += 2 }
+  if (similarRoomOnLeftAndRight) { centerScore += 2 }
+  if (moreRoomOnLeft && !sameRoomOnLeftAndRight) { leftScore += 1 }
+  if (!moreRoomOnLeft && !sameRoomOnLeftAndRight) { rightScore += 1 }
+  if (objectOccupiesMostofScreenWidth) { centerScore +=1 }
+
+  return [
+    {
+      name: 'left',
+      score: leftScore,
+      position: HighlightPositionX.Left
+    },
+    {
+      name: 'right',
+      score: rightScore,
+      position: HighlightPositionX.Right
+    },
+    {
+      name: 'center',
+      score: centerScore,
+      position: HighlightPositionX.Center
+    },
+  ]
+}
+
+export const getTargetItemLocation = (values: ITargetLocationArgs): { x: HighlightPositionX, y: HighlightPositionY }  => {
+  const positionRankingsX = getPositionRankingsX(values)
+  const positionRankingsY = getPositionRankingsY(values)
+  
+  const sortedX = positionRankingsX.sort((a,b) => a.score < b.score ? 1 : -1)
+  const sortedY = positionRankingsY.sort((a,b) => a.score < b.score ? 1 : -1)
+
+  const highestX = sortedX[0]
+  const highestY = sortedY[0]
+
+  return {
+    x: highestX.position,
+    y: highestY.position
+  }
+}
+
+export const getTargetInfoBoxPositioning = (targetItemScreenLocation: { x: HighlightPositionX, y: HighlightPositionY }) => {
   let x = InfoPositionsX.Uncalculated
   let y = InfoPositionsY.Uncalculated
 
-  switch (targetItemScreenLocation) {
-    case ScreenPositions.TopLeft:
+  switch (targetItemScreenLocation.x) {
+    case HighlightPositionX.Left:
+    case HighlightPositionX.LeftCenter:
       x = InfoPositionsX.RightOuter
-      y = InfoPositionsY.Below
       break
-    case ScreenPositions.TopCenter:
+    case HighlightPositionX.Center:
       x = InfoPositionsX.LeftInner
-      y = InfoPositionsY.Below
       break
-    case ScreenPositions.TopRight:
+    case HighlightPositionX.RightCenter:
+    case HighlightPositionX.Right:
       x = InfoPositionsX.LeftOuter
-      y = InfoPositionsY.Below
-      break
-    case ScreenPositions.CenterLeft:
-      x = InfoPositionsX.Right
-      y = InfoPositionsY.Center
-      break
-    case ScreenPositions.Center:
-      x = InfoPositionsX.LeftInner
-      y = InfoPositionsY.Above
-      break
-    case ScreenPositions.CenterRight:
-      x = InfoPositionsX.Left
-      y = InfoPositionsY.Center
-      break
-    case ScreenPositions.BottomLeft:
-      x = InfoPositionsX.RightOuter
-      y = InfoPositionsY.Above
-      break
-    case ScreenPositions.BottomCenter:
-      x = InfoPositionsX.LeftInner
-      y = InfoPositionsY.Above
-      break
-    case ScreenPositions.BottomRight:
-      x = InfoPositionsX.LeftOuter
-      y = InfoPositionsY.Above
-      break
-    case ScreenPositions.Uncalculated:
-      x = InfoPositionsX.Uncalculated
-      y = InfoPositionsY.Uncalculated
       break
   }
+
+  switch(targetItemScreenLocation.y) {
+    case HighlightPositionY.Top:
+    case HighlightPositionY.TopCenter:
+      y = InfoPositionsY.Below
+      break
+    case HighlightPositionY.Center:
+      y = InfoPositionsY.Above
+      break
+    case HighlightPositionY.BottomCenter:
+    case HighlightPositionY.Bottom:
+      y = InfoPositionsY.Above
+      break
+  }
+
+  if (targetItemScreenLocation.y === HighlightPositionY.Center) {
+    switch (targetItemScreenLocation.x) {
+      case HighlightPositionX.Left:
+      case HighlightPositionX.LeftCenter:
+        x = InfoPositionsX.Right
+        y = InfoPositionsY.Center
+        break
+      case HighlightPositionX.Center:
+        x = InfoPositionsX.LeftInner
+        break
+      case HighlightPositionX.RightCenter:
+      case HighlightPositionX.Right:
+        x = InfoPositionsX.Left
+        y = InfoPositionsY.Center
+        break
+    }
+  }
+
+  // switch (targetItemScreenLocation) {
+  //   case ScreenPositions.TopLeft:
+  //     x = InfoPositionsX.RightOuter
+  //     y = InfoPositionsY.Below
+  //     break
+  //   case ScreenPositions.TopCenter:
+  //     x = InfoPositionsX.LeftInner
+  //     y = InfoPositionsY.Below
+  //     break
+  //   case ScreenPositions.TopRight:
+  //     x = InfoPositionsX.LeftOuter
+  //     y = InfoPositionsY.Below
+  //     break
+  //   case ScreenPositions.CenterLeft:
+  //     x = InfoPositionsX.Right
+  //     y = InfoPositionsY.Center
+  //     break
+  //   case ScreenPositions.Center:
+  //     x = InfoPositionsX.LeftInner
+  //     y = InfoPositionsY.Above
+  //     break
+  //   case ScreenPositions.CenterRight:
+  //     x = InfoPositionsX.Left
+  //     y = InfoPositionsY.Center
+  //     break
+  //   case ScreenPositions.BottomLeft:
+  //     x = InfoPositionsX.RightOuter
+  //     y = InfoPositionsY.Above
+  //     break
+  //   case ScreenPositions.BottomCenter:
+  //     x = InfoPositionsX.LeftInner
+  //     y = InfoPositionsY.Above
+  //     break
+  //   case ScreenPositions.BottomRight:
+  //     x = InfoPositionsX.LeftOuter
+  //     y = InfoPositionsY.Above
+  //     break
+  //   case ScreenPositions.Uncalculated:
+  //     x = InfoPositionsX.Uncalculated
+  //     y = InfoPositionsY.Uncalculated
+  //     break
+  // }
 
   return {
     x,

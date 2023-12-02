@@ -1,3 +1,5 @@
+import type { DisplayOn } from "./enums.js"
+
 export interface IAppDetails {
   headerHeight?: number
   mobileBreakpoint?: number
@@ -6,12 +8,16 @@ export interface IAppDetails {
 export interface IAppearance {
   defaultPaddingX?: number
   defaultPaddingY?: number
+  infoBox?: {
+    padding: number
+  }
 }
 
 export interface IBehavior {
   animate?: boolean
   animationDuration?: number
   lockScroll?: boolean
+  scrollCurve?: (t: number) => number
   scrollType?: ScrollBehavior
   scrollTimeoutDuration?: number
   scrollYSimilarityThreshold?: number
@@ -22,7 +28,7 @@ export interface IStep {
   action?: () => void
   actionTimeout?: number
   buttonText: string
-  displayOn?: 'mobile' | 'desktop' | 'both'
+  displayOn?: DisplayOn
   id: string
   mobileId?: string
   roundedFull?: boolean
