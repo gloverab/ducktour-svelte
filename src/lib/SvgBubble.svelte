@@ -17,14 +17,16 @@
 
 	const viewBox = 100
 
-	export let caretPositionX: number
-
 	export let activeScrollOrWindowResize = false
-	export let caretPositionY = CaretPositioning.Top as CaretPositioning
-	export let w = 10
-	export let h = 10
 	export let show = false
-	export let hideCaret = false
+	export let values = {
+		w: 10,
+		h: 10,
+		x: 0,
+		y: 0,
+		caretPositionX: 0,
+		caretPositionY: CaretPositioning.Hide
+	}
 
 	let initialValuesSet = false
 	let outerWidth: number
@@ -35,9 +37,21 @@
 		multiplier = viewBox / outerWidth
 	}
 
-	$: width = w * multiplier
-	$: height = h * multiplier
-	$: caretOffset = caretPositionX * multiplier
+	let valuesToUse: {
+		w: number
+		h: number
+		caretOffset: number
+		caretPositionY: CaretPositioning
+	}
+
+	$: if (multiplier && values) {
+		valuesToUse = {
+			w: values.w * multiplier,
+			h: values.h * multiplier,
+			caretOffset: values.caretPositionX * multiplier,
+			caretPositionY: values.caretPositionY
+		}
+	}
 
 	let animatedEl: SVGAnimateElement
 
@@ -49,8 +63,8 @@
 		initialValues = {
 			topAddition: 0,
 			bottomAddition: 3.5,
-			width,
-			height,
+			width: valuesToUse.w,
+			height: valuesToUse.h,
 			caretL: baseCaretL,
 			caretC: baseCaretC,
 			caretR: baseCaretR
@@ -58,17 +72,17 @@
 		fromValues = {
 			topAddition: 0,
 			bottomAddition: 3.5,
-			width,
-			height,
+			width: valuesToUse.w,
+			height: valuesToUse.h,
 			caretL: baseCaretL,
 			caretC: baseCaretC,
 			caretR: baseCaretR
 		}
 		toValues = {
-			topAddition: caretPositionY === CaretPositioning.Bottom ? 0 : 3.5,
-			bottomAddition: caretPositionY === CaretPositioning.Bottom ? 0 : 3.5,
-			width,
-			height,
+			topAddition: valuesToUse.caretPositionY === CaretPositioning.Bottom ? 0 : 3.5,
+			bottomAddition: valuesToUse.caretPositionY === CaretPositioning.Bottom ? 0 : 3.5,
+			width: valuesToUse.w,
+			height: valuesToUse.h,
 			caretL: baseCaretL,
 			caretC: baseCaretC,
 			caretR: baseCaretR
@@ -76,7 +90,7 @@
 		initialValuesSet = true
 	}
 
-	$: if (multiplier && width && height && !initialValuesSet) {
+	$: if (valuesToUse && !initialValuesSet) {
 		setInitialValues()
 	}
 
@@ -105,12 +119,13 @@
 	// }
 
 	const animate = () => {
+		console.log('animate with: ',valuesToUse)
 		fromValues = !show ? initialValues : toValues
-		const maxOffsetRight = width - baseCaretR * 2
-		const useMaxRight = caretOffset > maxOffsetRight
+		const maxOffsetRight = valuesToUse.w - baseCaretR * 2
+		const useMaxRight = valuesToUse.caretOffset > maxOffsetRight
 		let topAddition = 0
 		let bottomAddition = 3.5
-		switch (caretPositionY) {
+		switch (values.caretPositionY) {
 			case CaretPositioning.Top:
 				topAddition = 3.5
 				bottomAddition = 3.5
@@ -123,17 +138,17 @@
 		toValues = {
 			topAddition,
 			bottomAddition,
-			width,
-			height,
+			width: valuesToUse.w,
+			height: valuesToUse.h,
 			caretL: useMaxRight
 				? baseCaretL + maxOffsetRight
-				: baseCaretL + caretOffset,
+				: baseCaretL + valuesToUse.caretOffset,
 			caretC: useMaxRight
 				? baseCaretC + maxOffsetRight
-				: baseCaretC + caretOffset,
+				: baseCaretC + valuesToUse.caretOffset,
 			caretR: useMaxRight
 				? baseCaretR + maxOffsetRight
-				: baseCaretR + caretOffset
+				: baseCaretR + valuesToUse.caretOffset
 		}
 		show = true
 		animatedEl.beginElement()
@@ -142,10 +157,7 @@
 	$: if (
 		initialValuesSet &&
 		animatedEl &&
-		w &&
-		h &&
-		multiplier &&
-		((caretPositionY || !caretPositionY) || caretOffset)
+		valuesToUse
 	) {
 		animate()
 	}

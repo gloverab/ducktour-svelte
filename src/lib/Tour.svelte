@@ -78,10 +78,10 @@
 	let infoBoxValues = {
 		x: 0,
 		y: 0,
-		caretX: 0,
-		caretPositioning: CaretPositioning.Hide,
-		width: 100,
-		height: 50
+		caretPositionX: 0,
+		caretPositionY: CaretPositioning.Hide,
+		w: 100,
+		h: 50
 	}
 
 	// Active Movement
@@ -109,6 +109,8 @@
 	let canScrollToPrevious = false
 	let positionBeforeAutoScroll = 0
 	let positionAfterAutoScroll = 0
+	let calledInfoBoxUpdateFromMousewheel = false
+	let calledInfoBoxUpdateFromScroll = false
 	
 	// Reactive
 	$: useMobileSettings = windowW < appDetails.mobileBreakpoint
@@ -165,7 +167,7 @@
 			behavior: behavior.scrollType
 		})
 		positionAfterAutoScroll = top
-		setTimeout(onScrollSuccess, behavior.scrollTimeoutDuration)
+		setTimeout(onScrollSuccess, behavior.animationDuration)
 	}
 
 	const performAutoScrollToPrevious = () => {
@@ -173,7 +175,7 @@
 			top: positionBeforeAutoScroll,
 			behavior: behavior.scrollType
 		})
-		setTimeout(onScrollSuccess, behavior.scrollTimeoutDuration)
+		setTimeout(onScrollSuccess, behavior.animationDuration)
 	}
 
 	const performAutoScrollUp = (amount: number) => {
@@ -182,24 +184,24 @@
 			top: amount,
 			behavior: behavior.scrollType
 		})
-		setTimeout(onScrollSuccess, behavior.scrollTimeoutDuration)
+		setTimeout(onScrollSuccess, behavior.animationDuration)
 	}
 
 	const scrollHighlightedItemToTop = () => {
 		canScrollToPrevious = initialScrollTookPlace
 		const scrollAmount = highlightedObjectRect.y - appDetails.headerHeight - appearance.defaultPaddingY
 		performAutoScroll(
-			scrollAmount
+			scrollAmount + scrollY
 		)
-		return scrollAmount
+		return scrollAmount + scrollY
 	}
 
 	const scrollHighlightedItemToCenter = () => {
 		canScrollToPrevious = initialScrollTookPlace
 		const scrollAmount =
 			highlightedObjectRect.y - windowH / 2 + highlightedObjectRect.height / 2
-		performAutoScroll(scrollAmount)
-		return scrollAmount
+		performAutoScroll(scrollAmount + scrollY)
+		return scrollAmount + scrollY
 	}
 
 	const scrollHightlightedItemAndNextStepsToCenter = (data: { topmost: number, bottommost: number }) => {
@@ -207,12 +209,14 @@
 		canScrollToPrevious = initialScrollTookPlace
 		const combinedHeight = Math.abs(topmost - bottommost)
 		const midpoint = topmost - windowH / 2 + combinedHeight / 2
-		performAutoScroll(midpoint)
+		performAutoScroll(midpoint + scrollY)
+		return midpoint + scrollY
 	}
 
 	const scrollUpToPrevious = () => {
-		// performAutoScrollToPrevious()
+		performAutoScrollToPrevious()
 		canScrollToPrevious = initialScrollTookPlace
+		setHighlightValues()
 	}
 
 	const autoScrollDown = () => {
@@ -229,11 +233,11 @@
 			case AutoScrollTypes.DownFull:
 				return scrollHighlightedItemToTop()
 			case AutoScrollTypes.DownCenter:
-				scrollHighlightedItemToCenter()
+				return scrollHighlightedItemToCenter()
 				break
 			case AutoScrollTypes.DownCenterMulti:
 				if (determinedScroll.data) {
-					scrollHightlightedItemAndNextStepsToCenter(determinedScroll.data)
+					return scrollHightlightedItemAndNextStepsToCenter(determinedScroll.data)
 				}
 				break
 			case AutoScrollTypes.UpFull:
@@ -252,73 +256,81 @@
 		performAutoScrollUp(desiredPosition)
 	}
 
-	const changeInfoBoxPosition = () => {
-		if (!activelyScrolling) {
-			infoBoxChangingPosition = true
-			stepToDisplay = activeStep
-			setTimeout(() => {
-				highlightValues = {
-					width: highlightedObjectRect.width + appearance.defaultPaddingX * 2,
-					height: highlightedObjectRect.height + appearance.defaultPaddingY * 2,
-					translateX: highlightedObjectRect.x - appearance.defaultPaddingX,
-					translateY: (highlightedObjectRect.y - appearance.defaultPaddingY) + scrollY,
-					roundness: 12,
-					translateYExtra: 0
-				}
-				const infoX = getInfoTranslateX(windowW, infoBoxEl, highlightedObjectRect, infoBoxPositioning.x, appearance.defaultPaddingX)
-				const infoY = getInfoTranslateY(infoBoxEl, highlightedObjectRect, infoBoxPositioning.y, appearance.defaultPaddingY)
-				infoBoxValues = {
-					x: infoX.boxX || 0,
-					y: infoY.boxY + scrollY || 0,
-					caretX: infoX.caretX,
-					caretPositioning: infoY.caretPositioning,
-					width: infoBoxEl.getBoundingClientRect().width,
-					height: infoBoxEl.getBoundingClientRect().height
-				}
-				initialInfoSet = true
-			}, 1)
-			setTimeout(() => {
-				infoBoxChangingPosition = false
-			}, behavior.animationDuration * .6)
-		}
-	}
-
-	const updatePositions = (scrollAmount: number) => {
-		const targetItemScreenLocation = getTargetItemLocation(windowW, windowH, highlightedObjectRect, scrollAmount)
-		infoBoxPositioning = getTargetInfoBoxPositioning(targetItemScreenLocation)
-		changeInfoBoxPosition()
-	}
-
 	const calculateAutoScroll = () => {
 		const willScrollDown = highlightedObjectRect.y + highlightedObjectRect.height > windowH
 		const willScrollUp = highlightedObjectRect.y - appDetails.headerHeight < 0
 		let scrollAmount = 0
 		if (willScrollDown || willScrollUp) {
 			if (willScrollDown) {
-				scrollAmount = autoScrollDown() || 0
+				scrollAmount = autoScrollDown() || scrollY
 			}
 	
 			if (willScrollUp) {
 				autoScrollUp()
 			}
 		}
-		updatePositions(scrollAmount)
+		setHighlightValues()
+		updateInfoBoxPosition(scrollAmount)
 
+	}
+
+	const setHighlightValues = () => {
+		if (!activelyScrolling) {
+			console.log('setHighlightValues')
+			highlightValues = {
+				width: highlightedObjectRect.width + appearance.defaultPaddingX * 2,
+				height: highlightedObjectRect.height + appearance.defaultPaddingY * 2,
+				translateX: highlightedObjectRect.x - appearance.defaultPaddingX,
+				translateY: (highlightedObjectRect.y - appearance.defaultPaddingY) + scrollY,
+				roundness: 12,
+				translateYExtra: 0
+			}
+		}
+	}
+
+	const changeInfoBoxPosition = () => {
+			console.log('changeInfoBoxPosition')
+			stepToDisplay = activeStep
+			setTimeout(() => {
+				const infoX = getInfoTranslateX(windowW, infoBoxEl, highlightedObjectRect, infoBoxPositioning.x, appearance.defaultPaddingX)
+				const infoY = getInfoTranslateY(infoBoxEl, highlightedObjectRect, infoBoxPositioning.y, appearance.defaultPaddingY)
+				const newInfoBoxValues = {
+					x: infoX.boxX || 0,
+					y: infoY.boxY + scrollY || 0,
+					caretPositionX: infoX.caretX,
+					caretPositionY: infoY.caretPositioning,
+					w: infoBoxEl.getBoundingClientRect().width,
+					h: infoBoxEl.getBoundingClientRect().height
+				}
+				if (JSON.stringify(infoBoxValues) !== JSON.stringify(newInfoBoxValues)) {
+					infoBoxChangingPosition = true
+					infoBoxValues = newInfoBoxValues
+				}
+				initialInfoSet = true
+			}, 1)
+			setTimeout(() => {
+				infoBoxChangingPosition = false
+			}, behavior.animationDuration * .6)
+	}
+
+	const updateInfoBoxPosition = (scrollAmount: number) => {
+		const obj = document.getElementById(id)
+		if (obj) {
+			console.log('updateInfoBoxPosition')
+			const objRect = obj.getBoundingClientRect()
+			highlightedObjectRect = objRect
+			const targetItemScreenLocation = getTargetItemLocation(windowW, windowH, highlightedObjectRect, scrollAmount)
+			infoBoxPositioning = getTargetInfoBoxPositioning(targetItemScreenLocation)
+			changeInfoBoxPosition()
+		}
 	}
 
 	const checkAutoScrollAndUpdatePositions = () => {
 		if (enableAutoScroll) {
-			if (
-				activeStepIndex < mostRecentStep &&
-				scrollY >= positionAfterAutoScroll &&
-				canScrollToPrevious
-			) {
-				scrollUpToPrevious()
-			} else {
-				calculateAutoScroll()
-			}
+			calculateAutoScroll()
 		} else {
-			updatePositions(0)
+			setHighlightValues()
+			updateInfoBoxPosition(scrollY)
 		}
 	}
 
@@ -330,7 +342,8 @@
 			if (!bypassAutoscroll) {
 				checkAutoScrollAndUpdatePositions()
 			} else {
-				updatePositions(0)
+				setHighlightValues()
+				updateInfoBoxPosition(scrollY)
 			}
 		} else {
 			setTimeout(getObject, 200)
@@ -382,7 +395,14 @@
 		clearTimeout(scrollTimeout)
 		scrollTimeout = setTimeout(() => {
 			activelyScrolling = false
-		}, behavior.scrollTimeoutDuration)
+			if (!mousewheelMotionDetected && !isAutoScrolling && !calledInfoBoxUpdateFromMousewheel) {
+				calledInfoBoxUpdateFromScroll = true
+				updateInfoBoxPosition(scrollY)
+				setTimeout(() => {
+					calledInfoBoxUpdateFromScroll = false
+				}, behavior.animationDuration)
+			}
+		}, 50)
 	}
 
 	const handleMousewheel = () => {
@@ -391,7 +411,14 @@
 
 		mousewheelTimeout = setTimeout(() => {
 			mousewheelMotionDetected = false
-		}, 100)
+			if (!activelyScrolling && !calledInfoBoxUpdateFromScroll) {
+				calledInfoBoxUpdateFromMousewheel = true
+				updateInfoBoxPosition(scrollY)
+				setTimeout(() => {
+					calledInfoBoxUpdateFromMousewheel = false
+				}, behavior.animationDuration)
+			}
+		}, 10)
 	}
 	
 	$: translateInfoX = infoBoxValues.x > 18 ? infoBoxValues.x : 18
@@ -399,7 +426,6 @@
 	$: resizingOrScrolling = activelyResizing || activelyScrolling
 
 	$: if (mounted) {
-		changeStep()
 		highlightValues = {
 			width: `${windowW}px` as string | number,
 			height: `${windowH}px` as string | number,
@@ -408,6 +434,7 @@
 			roundness: 0,
 			translateYExtra: 0
 		}
+		setTimeout(changeStep, 20)
 	}
 
 	onMount(() => {
@@ -422,6 +449,7 @@
 			showInfoBoxContent = true
 		}, 1200)
 	})
+	$: console.log(infoBoxValues)
 </script>
 
 <svelte:window
@@ -432,6 +460,8 @@
 	bind:innerHeight={windowH}
 	bind:scrollY
 />
+
+
 
 {#if behavior.lockScroll}
 	<!-- <LockScroll /> -->
@@ -493,12 +523,8 @@
 			>
 				{#if initialInfoSet}
 					<SvgBubble
-						w={infoBoxValues.width}
-						h={infoBoxValues.height - 12}
-						hideCaret={mousewheelMotionDetected}
+						values={infoBoxValues}
 						activeScrollOrWindowResize={resizingOrScrolling || activelyResizing}
-						caretPositionY={infoBoxValues.caretPositioning}
-						caretPositionX={infoBoxValues.caretX}
 						bind:show={infoBoxDisplayed}
 					/>
 				{/if}
@@ -525,7 +551,7 @@
 					ducktour--p-4.5
 					ducktour--z-10
 				"
-				style="transform: translate3d({translateInfoX}px,{infoBoxValues.caretPositioning !== CaretPositioning.Top
+				style="transform: translate3d({translateInfoX}px,{infoBoxValues.caretPositionY !== CaretPositioning.Top
 					? translateInfoY - 12
 					: translateInfoY}px,0);"
 			>
@@ -536,7 +562,7 @@
 					"
 					class:ducktour--opacity-0={infoBoxChangingPosition}
 					class:ducktour--opacity-100={!infoBoxChangingPosition}
-					class:ducktour--duration-400={!infoBoxChangingPosition}
+					class:ducktour--duration-500={!infoBoxChangingPosition}
 					bind:this={infoBoxContentEl}
 				>
 					<p class="font-medium">{stepToDisplay?.title}</p>
