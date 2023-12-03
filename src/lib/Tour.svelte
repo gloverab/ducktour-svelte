@@ -7,10 +7,11 @@
 <script lang="ts">
 	import type { IAppDetailsPrivate, IAppearancePrivate, IBehaviorPrivate } from "./types/private.ts";
   import LockScroll from "./LockScroll.svelte"
+  import InfoBox from "./InfoBox.svelte"
   import SvgBubble from "./SvgBubble.svelte"
 	import { defaultAppDetails, defaultAppearance, defaultBehavior } from "./defaults.js";
 	import { AutoScrollTypes, CaretPositioning, InfoPositionsX, InfoPositionsY, determineScrollDown, getDesktopSteps, getInfoTranslateX, getInfoTranslateY, getMobileSteps, getTargetInfoBoxPositioning, getTargetItemLocation, smoothScrollTo } from "./helpers.js";
-	import type { IAppearance, IBehavior, IStep } from "./types/public.js";
+	import type { IAppearance, IBehavior, IStep } from "./types/props.js";
 	import { onMount } from "svelte";
 
 	// Required Props
@@ -34,7 +35,6 @@
 	let windowH: number
 	let scrollY: number
 	let infoBoxEl: HTMLDivElement
-	let infoBoxContentEl: HTMLDivElement
 
 	// Initial Mount
 	let initialInfoSet = false
@@ -48,7 +48,6 @@
 	let activeStepIndex: number
 	let activeStep: IStep
 	let id: string
-	let hideTextOnStepChange = false
 	
 	// Active Item Data
 	let element: HTMLElement | null
@@ -66,6 +65,7 @@
 	}
 
 	// Info Box Data
+	let triggerNextStepAnimation: () => void
 	let infoBoxPositioning = {
 		x: InfoPositionsX.Center,
 		y: InfoPositionsY.Center
@@ -123,14 +123,6 @@
 		}
 	}
 
-	const fromWindowTop = (el: HTMLElement) => {
-		return el.getBoundingClientRect().top
-	}
-
-	const fromDocumentTop = (el: HTMLElement) => {
-		return el.getBoundingClientRect().top + scrollY
-	}
-
 	const display = () => {
 		showHighlightTimeout = setTimeout(() => {
 			showHighlight = true
@@ -169,6 +161,7 @@
 
 	const handleClickBack = () => {
 		if (activeStepIndex > 0) {
+			triggerNextStepAnimation()
 			const previousIndex = activeStepIndex - 1
 			updateStep(previousIndex)
 		}
@@ -178,6 +171,7 @@
 		if (activeStepIndex === stepsToUse.length - 1) {
 			handleFinish()
 		} else {
+			triggerNextStepAnimation()
 			const nextIndex = activeStepIndex + 1
 			updateStep(nextIndex)
 		}
@@ -519,78 +513,20 @@
 					/>
 				{/if}
 			</div>
-			<div
-				bind:this={infoBoxEl}
-				class:ducktour--opacity-0={!showInfoBoxContent ||
-					!initialInfoSet ||
-					!showHighlight}
-				class:ducktour--opacity-80={initialInfoSet &&
-					showHighlight &&
-					(resizingOrScrolling)}
-				class:ducktour--opacity-100={!resizingOrScrolling && initialInfoSet &&
-					showHighlight &&
-					showInfoBoxContent}
-				class:ducktour--duration-500={true}
-				class="
-					ducktour--min-w-50
-					ducktour--max-w-90
-					ducktour--absolute
-					ducktour--top-3
-					ducktour--left-0
-					ducktour--p-4
-					ducktour--z-10
-				"
-				style="transform: translate3d({translateInfoX}px,{infoBoxValues.caretPositionY !== CaretPositioning.Top
-					? translateInfoY - 12
-					: translateInfoY}px,0);"
-			>
-				<div
-					class="
-						ducktour--relative
-						ducktour--z-10
-					"
-					class:ducktour--opacity-0={infoBoxChangingPosition}
-					class:ducktour--opacity-100={!infoBoxChangingPosition}
-					class:ducktour--duration-100={infoBoxChangingPosition}
-					class:ducktour--duration-500={!infoBoxChangingPosition}
-					bind:this={infoBoxContentEl}
-				>
-					<p class="font-medium">{stepToDisplay?.title}</p>
-					<p class="text-sm">{stepToDisplay?.text}</p>
-					<div class="
-						ducktour--flex
-						ducktour--justify-between
-						ducktour--items-center
-						ducktour--pt-4
-						ducktour--space-x-6
-					">
-						<p class="font-medium text-sm text-grey-dark">
-							{activeStepIndex + 1} of {stepsToUse.length}
-						</p>
-						<div class="
-							ducktour--flex
-							ducktour--items-center
-							ducktour--space-x-6
-						">
-							<!-- <ButtonSecondary
-								id="walkthrough-back-{id}"
-								disabled={activeStepIndex === 0}
-								color="primary"
-								onClick={handleBack}
-								text="previous"
-							/>
-							<Button
-								id="walkthrough-next-{id}"
-								onClick={handleNext}
-								sm
-								text={infoBoxContext?.buttonText}
-							/> -->
-							<button on:click={handleClickBack}>Back</button>
-							<button on:click={handleClickNext}>Next</button>
-						</div>
-					</div>
-				</div>
-			</div>
+			<InfoBox
+				{activeStepIndex}
+				{_appearance}
+				{_behavior}
+				{handleClickNext}
+				{handleClickBack}
+				{infoBoxValues}
+				{showHighlight}
+				{stepToDisplay}
+				{stepsToUse}
+				bind:triggerNextStepAnimation
+				bind:element={infoBoxEl}
+			/>
+			
 			{#if showInfoBox}
 				<!-- <Bottom {activeStepIndex} {handleBack} {handleSkip} steps={stepsToUse} /> -->
 			{/if}
@@ -791,6 +727,5 @@
 		background-color: #ffffff;
 		padding: .5rem;
 		border-radius: 12px;
-
 	}
 </style>

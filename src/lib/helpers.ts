@@ -1,19 +1,4 @@
-import { tweened } from "svelte/motion"
-import type { IStep } from "./types/public.js"
-import { cubicOut } from "svelte/easing"
-
-enum ScreenPositions {
-  TopLeft = 'top-left',
-  TopCenter = 'top-center',
-  TopRight = 'top-right',
-  CenterLeft = 'center-left',
-  Center = 'center-center',
-  CenterRight = 'center-right',
-  BottomLeft = 'bottom-left',
-  BottomCenter = 'bottom-center',
-  BottomRight = 'bottom-right',
-  Uncalculated = 'uncalculated'
-}
+import type { IStep } from "./types/props.js"
 
 export enum HighlightPositionX {
   Left,

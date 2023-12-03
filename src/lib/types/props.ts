@@ -10,6 +10,8 @@ export interface IAppearance {
   defaultPaddingY?: number
   infoBox?: {
     padding: number
+    maxWidth: number
+    minWidth: number
   }
 }
 
