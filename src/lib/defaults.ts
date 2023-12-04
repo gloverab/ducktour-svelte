@@ -10,6 +10,7 @@ export const defaultAppearance: IAppearancePrivate = {
   defaultPaddingX: 12,
   defaultPaddingY: 12,
   infoBox: {
+    backgroundColor: '#fff',
     padding: 16,
     maxWidth: 200,
     minWidth: 360

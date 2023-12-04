@@ -9,9 +9,10 @@ export interface IAppearance {
   defaultPaddingX?: number
   defaultPaddingY?: number
   infoBox?: {
-    padding: number
-    maxWidth: number
-    minWidth: number
+    padding?: number
+    maxWidth?: number
+    minWidth?: number
+    backgroundColor?: string
   }
 }
 

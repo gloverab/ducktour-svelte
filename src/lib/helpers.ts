@@ -260,49 +260,6 @@ export const getTargetInfoBoxPositioning = (targetItemScreenLocation: { x: Highl
     }
   }
 
-  // switch (targetItemScreenLocation) {
-  //   case ScreenPositions.TopLeft:
-  //     x = InfoPositionsX.RightOuter
-  //     y = InfoPositionsY.Below
-  //     break
-  //   case ScreenPositions.TopCenter:
-  //     x = InfoPositionsX.LeftInner
-  //     y = InfoPositionsY.Below
-  //     break
-  //   case ScreenPositions.TopRight:
-  //     x = InfoPositionsX.LeftOuter
-  //     y = InfoPositionsY.Below
-  //     break
-  //   case ScreenPositions.CenterLeft:
-  //     x = InfoPositionsX.Right
-  //     y = InfoPositionsY.Center
-  //     break
-  //   case ScreenPositions.Center:
-  //     x = InfoPositionsX.LeftInner
-  //     y = InfoPositionsY.Above
-  //     break
-  //   case ScreenPositions.CenterRight:
-  //     x = InfoPositionsX.Left
-  //     y = InfoPositionsY.Center
-  //     break
-  //   case ScreenPositions.BottomLeft:
-  //     x = InfoPositionsX.RightOuter
-  //     y = InfoPositionsY.Above
-  //     break
-  //   case ScreenPositions.BottomCenter:
-  //     x = InfoPositionsX.LeftInner
-  //     y = InfoPositionsY.Above
-  //     break
-  //   case ScreenPositions.BottomRight:
-  //     x = InfoPositionsX.LeftOuter
-  //     y = InfoPositionsY.Above
-  //     break
-  //   case ScreenPositions.Uncalculated:
-  //     x = InfoPositionsX.Uncalculated
-  //     y = InfoPositionsY.Uncalculated
-  //     break
-  // }
-
   return {
     x,
     y

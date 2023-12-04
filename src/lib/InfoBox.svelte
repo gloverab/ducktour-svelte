@@ -9,7 +9,7 @@
   export let handleClickNext: () => void
   export let handleClickBack: () => void
   export let infoBoxValues: any
-  export let hideText = false
+  export let showInfoBox = false
   export let showHighlight: boolean
   export let stepToDisplay: any
   export let stepsToUse: IStep[]
@@ -23,13 +23,9 @@
     animateTransition = true
     setTimeout(() => {
       animateTransition = false
-    }, 1010)
+    }, _behavior.animationDuration)
   }
-
-  export const triggerTextReveal = () => {
-
-  }
-
+  
   $: translateInfoX = infoBoxValues.x > 18 ? infoBoxValues.x : 18
 	$: translateInfoY = !showHighlight ? windowH / 2 : infoBoxValues.y
 
@@ -42,9 +38,9 @@
 
 <div
   bind:this={element}
-  class:ducktour--opacity-0={hideText}
-  class:ducktour--opacity-80={transitioning}
-  class:ducktour--opacity-100={!hideText && !transitioning}
+  class:ducktour--opacity-0={!showInfoBox}
+  class:ducktour--opacity-80={showInfoBox && transitioning}
+  class:ducktour--opacity-100={showInfoBox && !transitioning}
   class:ducktour--duration-500={true}
   class="
     ducktour--min-w-50
@@ -57,7 +53,8 @@
   "
   style="
     transform: {transform};
-    maxWidth: {_appearance.infoBox.maxWidth}
+    minWidth: {_appearance.infoBox.minWidth};
+    maxWidth: {_appearance.infoBox.maxWidth};
   "
 >
   <div
@@ -96,6 +93,10 @@
 		-webkit-box-sizing: border-box; /* Safari/Chrome, other WebKit */
 		-moz-box-sizing: border-box;    /* Firefox, other Gecko */
 		box-sizing: border-box;         /* Opera/IE 8+ */
+	}
+
+  :root {
+		/* --ducktour-animation-duration: 500ms; */
 	}
 
 	p, span, h1, h2, h3, h4, h5, h6 {
@@ -160,13 +161,20 @@
 	.ducktour--opacity-100 { opacity: 1; }
 
   .ducktour--duration-500 {
-		-webkit-transition-duration: 500ms;
-		-o-transition-duration: 500ms;
-		transition-duration: 500ms;
+		-webkit-transition-duration: var(--ducktour-animation-duration);
+		-o-transition-duration: var(--ducktour-animation-duration);
+		transition-duration: var(--ducktour-animation-duration);
 	}
 
   .animateTransition {
-    animation: changeStep 1s forwards;
+    -webkit-animation-name: changeStep;
+    -webkit-animation-duration: var(--ducktour-animation-duration);
+    -webkit-animation-fill-mode: forwards;
+    -webkit-animation-timing-function: ease-in-out;
+    animation-name: changeStep;
+    animation-duration: var(--ducktour-animation-duration);
+    animation-fill-mode: forwards;
+    animation-timing-function: ease-in-out;
   }
 
   @keyframes changeStep {
@@ -179,12 +187,12 @@
       opacity: 0;
     }
 
-    45% {
-      transform: translate3d(0, 12px, 0);
+    25% {
+      transform: translate3d(0, 8px, 0);
       opacity: 0;
     }
-    50% {
-      transform: translate3d(0, 12px, 0);
+    30% {
+      transform: translate3d(0, 8px, 0);
       opacity: 0;
     }
 

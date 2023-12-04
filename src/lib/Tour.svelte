@@ -109,13 +109,18 @@
 	$: stepsToUse = useMobileSettings ? getMobileSteps(steps) : getDesktopSteps(steps)
 
 	const setCustomizations = () => {
+		const infoBoxAppearance = {
+			...appearance.infoBox,
+			...defaultAppearance.infoBox
+		}
 		appDetails = {
 			...defaultAppDetails,
 			...appDetails,
 	}
 		_appearance = {
 			...defaultAppearance,
-			...appearance
+			...appearance,
+			infoBox: infoBoxAppearance
 		}
 		_behavior = {
 			...defaultBehavior,
@@ -139,6 +144,7 @@
 		activeStepIndex = _behavior.startingStep
 		activeStep = stepsToUse[activeStepIndex]
 		id = useMobileSettings ? activeStep.mobileId || activeStep.id : activeStep.id
+		document.documentElement.style.setProperty('--ducktour-animation-duration', '500ms')
 		highlightValues = {
 			width: `${windowW}px` as string | number,
 			height: `${windowH}px` as string | number,
@@ -507,6 +513,8 @@
 			>
 				{#if initialInfoSet}
 					<SvgBubble
+						{_appearance}
+						{_behavior}
 						values={infoBoxValues}
 						activeScrollOrWindowResize={resizingOrScrolling || activelyResizing}
 						bind:show={infoBoxDisplayed}
@@ -521,6 +529,7 @@
 				{handleClickBack}
 				{infoBoxValues}
 				{showHighlight}
+				{showInfoBox}
 				{stepToDisplay}
 				{stepsToUse}
 				bind:triggerNextStepAnimation

@@ -7,6 +7,7 @@ export interface IAppearancePrivate {
   defaultPaddingX: number
   defaultPaddingY: number
   infoBox: {
+    backgroundColor: string
     padding: number
     maxWidth: number
     minWidth: number

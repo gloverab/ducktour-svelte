@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { CaretPositioning } from "./helpers.js";
+	import type { IAppearancePrivate, IBehaviorPrivate } from "./types/private.js";
 
 	interface ValueShape {
 		topAddition: number,
@@ -17,7 +18,18 @@
 
 	const viewBox = 100
 
+	const caretHeight = 3.5
+	const caretWidthMaybe = 2.5
+	const curveWidthMaybe = 6
+
+	const curveValueMaybe = 2.6863 // Can this round to 2.6863? Feels like yes?
+	const curveValueConverse = 0.8137 // adding this with the main one equals caret height? Hmm
+
+	const mysteryNumber = 8 // Where does 8 come from??
+
 	export let activeScrollOrWindowResize = false
+	export let _appearance: IAppearancePrivate
+	export let _behavior: IBehaviorPrivate
 	export let show = false
 	export let values = {
 		w: 10,
@@ -161,40 +173,33 @@
 		animate()
 	}
 
-	// $: if (show && hideCaret && !caretHidden) {
-	// 	onHideCaret()
-	// }
-
-	// $: if (show && !hideCaret && caretHidden) {
-	// 	onUnhideCaret()
-	// }
-
 	const getSvgPath = (values: ValueShape) => {
 		const newHeight = values.height + values.bottomAddition
 		return `
-      M0 ${6 + values.topAddition}
-      C0 ${2.68629 + values.topAddition} 2.68629 ${values.topAddition} 6 ${
+      M0 ${curveWidthMaybe + values.topAddition}
+      C0 ${curveValueMaybe + values.topAddition} ${curveValueMaybe} ${values.topAddition} ${curveWidthMaybe} ${
 			values.topAddition
 		}
       H${values.caretL}
       L${values.caretC} 0
       L${values.caretR} ${values.topAddition}
-      H${values.width - 6}
-      C${values.width - 2.6863} ${values.topAddition} ${values.width} ${
-			2.68629 + values.topAddition
-		} ${values.width} ${6 + values.topAddition}
-      V${newHeight - 2.5}
-      C${values.width} ${newHeight + 0.8137} ${values.width - 2.6863} ${
-			newHeight + 3.5
-		} ${values.width - 6} ${newHeight + 3.5}
+      H${values.width - curveWidthMaybe}
+      C${values.width - curveValueMaybe} ${values.topAddition} ${values.width} ${
+			curveValueMaybe + values.topAddition
+		} ${values.width} ${curveWidthMaybe + values.topAddition}
+      V${newHeight - caretWidthMaybe}
+      C${values.width} ${newHeight + curveValueConverse} ${values.width - curveValueMaybe} ${
+			newHeight + caretHeight
+		} ${values.width - curveWidthMaybe} ${newHeight + caretHeight}
       H${values.caretR}
-      L${values.caretC} ${values.height + 7}
-      L${values.caretL} ${newHeight + 3.5}
-      H8
-      C2.68629 ${newHeight + 3.5} 0 ${newHeight + 0.8137} 0 ${newHeight - 2.5}
-      V9.5
+      L${values.caretC} ${values.height + caretHeight * 2}
+      L${values.caretL} ${newHeight + caretHeight}
+      H${mysteryNumber}
+      C${curveValueMaybe} ${newHeight + caretHeight} 0 ${newHeight + curveValueConverse} 0 ${newHeight - caretWidthMaybe}
+      V${caretHeight + curveWidthMaybe}
       Z
     `
+		
 	}
 </script>
 
@@ -204,18 +209,18 @@
 			class="
 				ducktour--w-full
 				ducktour--transform
-				ducktour--duration-1200
+				ducktour--duration-1000
 				{show
 					? 'ducktour--translate-y-0'
 					: 'ducktour--translate-y-30'}"
 		>
-			<svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
-				<path id="p1" fill="#fff" d={getSvgPath(initialValues)} />
+			<svg viewBox="0 0 {viewBox} {viewBox}" xmlns="http://www.w3.org/2000/svg">
+				<path id="p1" fill="{_appearance.infoBox.backgroundColor}" d={getSvgPath(initialValues)} />
 				<animate
 					bind:this={animatedEl}
 					xlink:href="#p1"
 					attributeName="d"
-					dur={activeScrollOrWindowResize ? '100ms' : '500ms'}
+					dur={activeScrollOrWindowResize ? '100ms' : `${_behavior.animationDuration}ms`}
 					begin="indefinite"
 					keySplines="0.5 0 0.5 1; 0.5 0 0.5 1; 0.5 0 0.5 1; 0.5 0 0.5 1"
 					keyTimes="0; 0.25; 0.5; 0.75; 1"
