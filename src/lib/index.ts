@@ -1,5 +1,1 @@
-import DuckTour from './Tour.svelte';
-
-export {
-  DuckTour
-}
+export { default as Ducktour } from './Tour.svelte';

@@ -1,3 +1,5 @@
+import type { SvelteComponent } from "svelte"
+
 export interface IAppDetailsPrivate {
   headerHeight: number
   mobileBreakpoint: number
@@ -6,6 +8,8 @@ export interface IAppDetailsPrivate {
 export interface IAppearancePrivate {
   defaultPaddingX: number
   defaultPaddingY: number
+  overlayOpacity: number
+  overlayFill: string
   infoBox: {
     backgroundColor: string
     padding: number
@@ -23,4 +27,14 @@ export interface IBehaviorPrivate {
   scrollTimeoutDuration: number
   scrollYSimilarityThreshold: number
   startingStep: number
+}
+
+export interface ICustomComponent {
+  component: SvelteComponent
+  props: object
+}
+
+export interface ICustomComponents {
+  infoBox?: ICustomComponent
+  bottom?: ICustomComponent
 }

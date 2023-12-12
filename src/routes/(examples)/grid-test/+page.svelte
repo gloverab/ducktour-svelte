@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { DisplayOn } from '$lib/types/enums.js';
+	import CustomInfoBox from '../../../example-components/CustomInfoBox.svelte';
 	import Tour from '../../../lib/Tour.svelte'
 
 	let showWalkthrough = true
@@ -60,9 +61,14 @@
 
 {#if showWalkthrough}
 	<Tour
-		onCompleteWalkthrough={() => (showWalkthrough = false)}
+		customComponents={{
+			infoBox: {
+				component: CustomInfoBox
+			}
+		}}
+		close={() => {showWalkthrough = false}}
 		steps={walkthroughTestSteps}
-		behavior={{ startingStep: 8 }}
+		behavior={{ startingStep: 8, animationDuration: 800 }}
 	/>
 {/if}
 

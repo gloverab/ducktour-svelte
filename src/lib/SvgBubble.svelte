@@ -44,6 +44,7 @@
 	let outerWidth: number
 	let multiplier: number
 	let caretHidden = false
+	let animating = false
 
 	$: if (outerWidth) {
 		multiplier = viewBox / outerWidth
@@ -106,30 +107,6 @@
 		setInitialValues()
 	}
 
-	// const onHideCaret = () => {
-	// 	fromValues = toValues
-	// 	toValues = {
-	// 		...toValues,
-	// 		topAddition: 0,
-	// 		bottomAddition: 3.5
-	// 	}
-	// 	caretHidden = true
-	// 	animatedEl.beginElement()
-	// }
-
-	// const unhide = () => {
-	// 	const previousFromValues = {...fromValues}
-	// 	fromValues = toValues
-	// 	toValues = previousFromValues
-	// 	caretHidden = false
-	// 	animatedEl.beginElement()
-	// }
-
-	// const onUnhideCaret = () => {
-	// 	unhide()
-	// 	setTimeout(unhide, 500)
-	// }
-
 	const animate = () => {
 		fromValues = !show ? initialValues : toValues
 		const maxOffsetRight = valuesToUse.w - baseCaretR * 2
@@ -162,7 +139,12 @@
 				: baseCaretR + valuesToUse.caretOffset
 		}
 		show = true
+		animating = true
 		animatedEl.beginElement()
+
+		setTimeout(() => {
+			animating = false
+		}, _behavior.animationDuration)
 	}
 
 	$: if (
@@ -206,13 +188,11 @@
 <div bind:clientWidth={outerWidth} class="ducktour--w-full">
 	{#if initialValuesSet}
 		<div
+			class:ducktour--svg-animating={animating}
+			class:ducktour--svg-not-animating={!animating}
 			class="
 				ducktour--w-full
-				ducktour--transform
-				ducktour--duration-1000
-				{show
-					? 'ducktour--translate-y-0'
-					: 'ducktour--translate-y-30'}"
+				ducktour--transform"
 		>
 			<svg viewBox="0 0 {viewBox} {viewBox}" xmlns="http://www.w3.org/2000/svg">
 				<path id="p1" fill="{_appearance.infoBox.backgroundColor}" d={getSvgPath(initialValues)} />
@@ -220,10 +200,10 @@
 					bind:this={animatedEl}
 					xlink:href="#p1"
 					attributeName="d"
-					dur={activeScrollOrWindowResize ? '100ms' : `${_behavior.animationDuration}ms`}
+					dur={`${_behavior.animationDuration}ms`}
 					begin="indefinite"
-					keySplines="0.5 0 0.5 1; 0.5 0 0.5 1; 0.5 0 0.5 1; 0.5 0 0.5 1"
-					keyTimes="0; 0.25; 0.5; 0.75; 1"
+					keySplines=".4, 0.0, 0.2, 1"
+					keyTimes="0; 1"
 					calcMode="spline"
 					from={getSvgPath(fromValues)}
 					to={getSvgPath(toValues)}
@@ -234,7 +214,7 @@
 	{/if}
 </div>
 
-<style global>
+<style>
 	.ducktour--transform {
 	--tw-translate-x: 0;
 	--tw-translate-y: 0;
@@ -257,17 +237,36 @@
 	width: 100%;
 }
 
-.ducktour--duration-1200 {
-	-webkit-transition-duration: 1200ms;
-	-o-transition-duration: 1200ms;
-	transition-duration: 1200ms;
+.ducktour--svg-animating {
+	-webkit-animation-name: opacityRamp;
+	-webkit-animation-duration: var(--ducktour-animation-duration);
+	-webkit-animation-fill-mode: forwards;
+	-webkit-transition-timing-function: cubic-bezier(.4, 0.0, 0.2, 1);
+	animation-name: opacityRamp;
+	animation-duration: var(--ducktour-animation-duration);
+	animation-fill-mode: forwards;
+	transition-timing-function: cubic-bezier(.4, 0.0, 0.2, 1);
 }
 
-.ducktour--translate-y-0 {
-	--tw-translate-y: 0px;
+.ducktour--svg-not-animating {
+	/* opacity: 1; */
 }
 
-.ducktour--translate-y-30 {
+@keyframes opacityRamp {
+    0% {
+      opacity: 1;
+    }
+
+		15% {
+			opacity: .85;
+		}
+
+    100% {
+      opacity: 1;
+    }
+  }
+
+/* .ducktour--translate-y-30 {
 	--tw-translate-y: 7.5rem;
-}
+} */
 </style>

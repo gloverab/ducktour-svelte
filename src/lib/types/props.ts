@@ -1,3 +1,4 @@
+import type { SvelteComponent } from "svelte"
 import type { DisplayOn } from "./enums.js"
 
 export interface IAppDetails {
@@ -8,6 +9,8 @@ export interface IAppDetails {
 export interface IAppearance {
   defaultPaddingX?: number
   defaultPaddingY?: number
+  overlayOpacity?: number
+  overlayFill?: string
   infoBox?: {
     padding?: number
     maxWidth?: number
@@ -37,4 +40,31 @@ export interface IStep {
   roundedFull?: boolean
   text: string
   title: string
+}
+
+export interface ICustomInfoBoxComponent {
+  component: typeof SvelteComponent<{
+    activeStepIndex: number
+    step: IStep
+    steps: IStep[]
+    onNext: () => void
+    onBack: () => void
+  }>
+  props?: object
+}
+
+export interface ICustomBottomComponent {
+  component: typeof SvelteComponent<{
+    activeStepIndex: number
+    step: IStep
+    steps: IStep[]
+    onNext: () => void
+    onBack: () => void
+  }>
+  props?: object
+}
+
+export interface ICustomComponents {
+  infoBox?: ICustomInfoBoxComponent
+  bottom?: ICustomBottomComponent
 }

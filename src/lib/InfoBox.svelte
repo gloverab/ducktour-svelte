@@ -1,16 +1,16 @@
 <script lang='ts'>
   import { CaretPositioning } from './helpers.js'
 	import type { IAppearancePrivate, IBehaviorPrivate } from './types/private.js';
-	import type { IStep } from './types/props.js';
+	import type { ICustomComponents, IStep } from './types/props.js';
   export let activeStepIndex: number
   export let _appearance: IAppearancePrivate
   export let _behavior: IBehaviorPrivate
+  export let _customComponents: ICustomComponents
   export let element: HTMLElement
   export let handleClickNext: () => void
   export let handleClickBack: () => void
   export let infoBoxValues: any
   export let showInfoBox = false
-  export let showHighlight: boolean
   export let stepToDisplay: any
   export let stepsToUse: IStep[]
   export let transitioning = false
@@ -25,13 +25,8 @@
       animateTransition = false
     }, _behavior.animationDuration)
   }
-  
-  $: translateInfoX = infoBoxValues.x > 18 ? infoBoxValues.x : 18
-	$: translateInfoY = !showHighlight ? windowH / 2 : infoBoxValues.y
 
-  $: transform = `translate3d(${translateInfoX}px,${infoBoxValues.caretPositionY !== CaretPositioning.Top
-    ? translateInfoY - 12
-    : translateInfoY}px,0)`
+  $: transform = `translate3d(0,${infoBoxValues.caretPositionY !== CaretPositioning.Top ? -12 : 0}px,0)`
 </script>
 
 <svelte:window bind:innerHeight={windowH} />
@@ -41,7 +36,6 @@
   class:ducktour--opacity-0={!showInfoBox}
   class:ducktour--opacity-80={showInfoBox && transitioning}
   class:ducktour--opacity-100={showInfoBox && !transitioning}
-  class:ducktour--duration-500={true}
   class="
     ducktour--min-w-50
     ducktour--max-w-90
@@ -50,6 +44,7 @@
     ducktour--left-0
     ducktour--p-4
     ducktour--z-10
+    ducktour--bubble
   "
   style="
     transform: {transform};
@@ -58,48 +53,55 @@
   "
 >
   <div
-    class:animateTransition
-    class="
-      ducktour--relative
-      ducktour--z-10
-    "
-  >
-    <p class="font-medium">{stepToDisplay?.title}</p>
-    <p class="text-sm">{stepToDisplay?.text}</p>
-    <div class="
-      ducktour--flex
-      ducktour--justify-between
-      ducktour--items-center
-      ducktour--pt-4
-      ducktour--space-x-6
-    ">
-      <p class="font-medium text-sm text-grey-dark">
-        {activeStepIndex + 1} of {stepsToUse.length}
-      </p>
+  class:animateTransition
+  class="
+  ducktour--relative
+  ducktour--z-10
+  ">
+    {#if _customComponents?.infoBox?.component}
+      <svelte:component
+        this={_customComponents.infoBox.component}
+        {..._customComponents.infoBox.props}
+        {activeStepIndex}
+        step={stepToDisplay}
+        steps={stepsToUse}
+        onNext={handleClickNext}
+        onBack={handleClickBack}
+      />
+    {:else}
+      <p class="font-medium">{stepToDisplay?.title}</p>
+      <p class="text-sm">{stepToDisplay?.text}</p>
       <div class="
         ducktour--flex
+        ducktour--justify-between
         ducktour--items-center
+        ducktour--pt-4
         ducktour--space-x-6
       ">
-        <button on:click={handleClickBack}>Back</button>
-        <button on:click={handleClickNext}>Next</button>
+        <p class="font-medium text-sm text-grey-dark">
+          {activeStepIndex + 1} of {stepsToUse.length}
+        </p>
+        <div class="
+          ducktour--flex
+          ducktour--items-center
+          ducktour--space-x-6
+        ">
+          <button on:click={handleClickBack}>Back</button>
+          <button on:click={handleClickNext}>Next</button>
+        </div>
       </div>
-    </div>
+    {/if}
   </div>
 </div>
 
-<style global>
+<style>
 	*, *::before, *::after {
 		-webkit-box-sizing: border-box; /* Safari/Chrome, other WebKit */
 		-moz-box-sizing: border-box;    /* Firefox, other Gecko */
 		box-sizing: border-box;         /* Opera/IE 8+ */
 	}
 
-  :root {
-		/* --ducktour-animation-duration: 500ms; */
-	}
-
-	p, span, h1, h2, h3, h4, h5, h6 {
+	p {
 		font-family: 'Helvetica Neue', sans-serif;
 		margin: 0;
 	}
@@ -160,41 +162,33 @@
 	.ducktour--opacity-80 { opacity: 0.8; }
 	.ducktour--opacity-100 { opacity: 1; }
 
-  .ducktour--duration-500 {
-		-webkit-transition-duration: var(--ducktour-animation-duration);
-		-o-transition-duration: var(--ducktour-animation-duration);
-		transition-duration: var(--ducktour-animation-duration);
-	}
-
   .animateTransition {
     -webkit-animation-name: changeStep;
     -webkit-animation-duration: var(--ducktour-animation-duration);
     -webkit-animation-fill-mode: forwards;
-    -webkit-animation-timing-function: ease-in-out;
+    -webkit-animation-timing-function: cubic-bezier(.4, 0.0, 0.2, 1);
     animation-name: changeStep;
     animation-duration: var(--ducktour-animation-duration);
     animation-fill-mode: forwards;
-    animation-timing-function: ease-in-out;
+    animation-timing-function: cubic-bezier(.4, 0.0, 0.2, 1);
   }
+
 
   @keyframes changeStep {
     0% {
       transform: translate3d(0,0,0);
       opacity: 0;
     }
-    5% {
+    1% {
       transform: translate3d(0,0,0);
       opacity: 0;
     }
 
-    25% {
-      transform: translate3d(0, 8px, 0);
+    2% {
+      transform: translate3d(0, 4px, 0);
       opacity: 0;
     }
-    30% {
-      transform: translate3d(0, 8px, 0);
-      opacity: 0;
-    }
+    
 
     100% {
       transform: translate3d(0, 0, 0);
