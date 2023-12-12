@@ -27,7 +27,7 @@
 		return result
 	}
 
-	const walkthroughTestSteps = arr.map((item, i) => {
+	const testSteps = arr.map((item, i) => {
 		return {
 			title: `Test region ${i + 1}`,
 			text: `Here we're seeing how the smart bubble responds to the placement of region ${
@@ -38,6 +38,39 @@
 			displayOn: DisplayOn.Both
 		}
 	})
+
+	const buttonSteps = [
+		{
+			title: 'Button One',
+			text: "Here we're seeing how the smart bubble responds to the placement of button 1.",
+			buttonText: 'Next',
+			id: 'btn-1',
+			displayOn: DisplayOn.Both
+		},
+		{
+			title: 'Button Two',
+			text: "Here we're seeing how the smart bubble responds to the placement of button 2.",
+			buttonText: 'Next',
+			id: 'btn-2',
+			displayOn: DisplayOn.Both
+		},
+		{
+			title: 'Button Three',
+			text: "Here we're seeing how the smart bubble responds to the placement of button 3.",
+			buttonText: 'Next',
+			id: 'btn-3',
+			displayOn: DisplayOn.Both
+		},
+		{
+			title: 'Button Four',
+			text: "Here we're seeing how the smart bubble responds to the placement of button 4.",
+			buttonText: 'Next',
+			id: 'btn-4',
+			displayOn: DisplayOn.Both
+		},
+	]
+
+	$:walkthroughTestSteps = [...buttonSteps, ...testSteps]
 </script>
 
 <div class="
@@ -45,6 +78,15 @@
 	ducktour--grid
 	ducktour--grid-cols-3"
 >
+	<header>
+		<h1>gridtest</h1>
+		<div class='right-side'>
+			<button id='btn-1'>Button 1</button>
+			<button id='btn-2'>Button 2</button>
+			<button id='btn-3'>Button 3</button>
+			<button id='btn-4'>Button 4</button>
+		</div>
+	</header>
 	{#each arr as item, i}
 		<div
 			id="grid-item-{i}"
@@ -66,6 +108,7 @@
 				component: CustomInfoBox
 			}
 		}}
+		devmode
 		close={() => {showWalkthrough = false}}
 		steps={walkthroughTestSteps}
 		behavior={{ startingStep: 8, animationDuration: 800 }}
@@ -77,6 +120,27 @@
 		-webkit-box-sizing: border-box; /* Safari/Chrome, other WebKit */
 		-moz-box-sizing: border-box;    /* Firefox, other Gecko */
 		box-sizing: border-box;         /* Opera/IE 8+ */
+	}
+
+	header {
+		width: 100vw;
+		position: fixed;
+		display: flex;
+		justify-content: space-between;
+		left: 0;
+		top: 0;
+		height: 100px;
+		background-color: green;
+	}
+
+	.right-side {
+		display: flex;
+		align-items: center;
+	}
+
+	header button {
+		width: 100px;
+		height: 100%;
 	}
 
 	.ducktour--h-200 {

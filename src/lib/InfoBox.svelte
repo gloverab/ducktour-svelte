@@ -26,7 +26,7 @@
     }, _behavior.animationDuration)
   }
 
-  $: transform = `translate3d(0,${infoBoxValues.caretPositionY !== CaretPositioning.Top ? -12 : 0}px,0)`
+  $: transform = `translate3d(0,${infoBoxValues.caretPositionY === CaretPositioning.Bottom ? -12 : 0}px,0)`
 </script>
 
 <svelte:window bind:innerHeight={windowH} />

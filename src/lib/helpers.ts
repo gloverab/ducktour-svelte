@@ -171,8 +171,8 @@ export const getPositionRankingsX = (values: ITargetLocationArgs): {name: string
   if (isVeryLeft) { leftScore += 2 }
   if (isVeryRight) { rightScore += 2 }
   if (similarRoomOnLeftAndRight) { centerScore += 2 }
-  if (moreRoomOnLeft && !sameRoomOnLeftAndRight) { leftScore += 1 }
-  if (!moreRoomOnLeft && !sameRoomOnLeftAndRight) { rightScore += 1 }
+  if (!moreRoomOnLeft && !sameRoomOnLeftAndRight) { leftScore += 1 }
+  if (moreRoomOnLeft && !sameRoomOnLeftAndRight) { rightScore += 1 }
   if (objectOccupiesMostofScreenWidth) { centerScore +=1 }
 
   return [
@@ -316,7 +316,9 @@ export const getInfoTranslateX = (
       break
     case InfoPositionsX.RightInner:
       boxX = rightSide - infoBoxW
-      caretX = 18
+      caretX = shouldCenter
+      ? rightSide - infoBoxHalfW + centerOfHighlightedObject
+      : 0
       break
     case InfoPositionsX.RightOuter:
       boxX = rightSide - infoBoxHalfW
