@@ -194,6 +194,7 @@
 		if (onExitIncomplete) {
 			onExitIncomplete(activeStep, activeStepIndex, stepsToUse)
 		}
+		close()
 	}
 
 	const onScrollSuccess = () => {
@@ -533,6 +534,7 @@
 					steps={stepsToUse}
 					onNext={handleClickNext}
 					onBack={handleClickBack}
+					onSkip={handleSkip}
 				/>
 				<!-- <Bottom {activeStepIndex} {handleBack} {handleSkip} steps={stepsToUse} /> -->
 			{/if}
