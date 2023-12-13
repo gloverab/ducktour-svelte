@@ -53,13 +53,29 @@ npm install ducktour --save-dev
 />
 ```
 
-## Usage
+## Props
 
 | Prop | Type | Description | Default |
 | ---- | ---- | ----------- | ------- |
 | steps | IStep[] | An array of steps that the tour will follow in order. | *required* |
 | close | function | A function that closes the walkthrough. | *required* |
 | appDetails | IAppDetails | An optional object that helps Ducktour render as effectively as possible in your application. | ```{ headerHeight: 100, mobileBreakpoint: 480 }``` |
+| appearance | IAppearance | An optional object used to customize the appearance of Ducktour. |
+```js
+{ highlightPaddingX: 12,
+  highlightPaddingY: 12,
+  highlightRadius: 12,
+  overlayOpacity: .7,
+  overlayFill: "#000",
+  infoBox: {
+    backgroundColor: "#fff",
+    padding: 16,
+    maxWidth: 200,
+    minWidth: 360
+  }
+}
+```
+|
 
 Everything inside `src/lib` is part of your library, everything inside `src/routes` can be used as a showcase or preview app.
 

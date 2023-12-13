@@ -7,8 +7,8 @@ export interface IAppDetails {
 }
 
 export interface IAppearance {
-  defaultPaddingX?: number
-  defaultPaddingY?: number
+  highlightPaddingX?: number
+  highlightPaddingY?: number
   overlayOpacity?: number
   overlayFill?: string
   infoBox?: {

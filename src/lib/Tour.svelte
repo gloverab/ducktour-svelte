@@ -236,7 +236,7 @@
 
 	const scrollHighlightedItemToTop = () => {
 		canScrollToPrevious = initialScrollTookPlace
-		const scrollAmount = highlightedObjectRect.y - _appDetails.headerHeight - _appearance.defaultPaddingY
+		const scrollAmount = highlightedObjectRect.y - _appDetails.headerHeight - _appearance.highlightPaddingY
 		
 		performAutoScroll(
 			scrollAmount + scrollY
@@ -298,7 +298,7 @@
 		const itemTopDistanceFromTop = highlightedObjectRect.top
 		const itemHeight = highlightedObjectRect.height
 		const desiredPosition =
-			itemTopDistanceFromTop + itemHeight + _appearance.defaultPaddingY - windowH
+			itemTopDistanceFromTop + itemHeight + _appearance.highlightPaddingY - windowH
 
 		performAutoScrollUp(desiredPosition)
 	}
@@ -323,10 +323,10 @@
 	const setHighlightValues = () => {
 		if (!activelyScrolling) {
 			highlightValues = {
-				w: highlightedObjectRect.width + _appearance.defaultPaddingX * 2,
-				h: highlightedObjectRect.height + _appearance.defaultPaddingY * 2,
-				x: highlightedObjectRect.x - _appearance.defaultPaddingX,
-				y: (highlightedObjectRect.y - _appearance.defaultPaddingY) + scrollY,
+				w: highlightedObjectRect.width + _appearance.highlightPaddingX * 2,
+				h: highlightedObjectRect.height + _appearance.highlightPaddingY * 2,
+				x: highlightedObjectRect.x - _appearance.highlightPaddingX,
+				y: (highlightedObjectRect.y - _appearance.highlightPaddingY) + scrollY,
 				r: 12
 			}
 		}
@@ -336,8 +336,8 @@
 	const changeInfoBoxPosition = () => {
 			stepToDisplay = activeStep
 			setTimeout(() => {
-				const infoX = getInfoTranslateX(windowW, infoBoxEl, highlightedObjectRect, infoBoxPositioning.x, _appearance.defaultPaddingX)
-				const infoY = getInfoTranslateY(infoBoxEl, highlightedObjectRect, infoBoxPositioning.y, _appearance.defaultPaddingY)
+				const infoX = getInfoTranslateX(windowW, infoBoxEl, highlightedObjectRect, infoBoxPositioning.x, _appearance.highlightPaddingX)
+				const infoY = getInfoTranslateY(infoBoxEl, highlightedObjectRect, infoBoxPositioning.y, _appearance.highlightPaddingY)
 				const newInfoBoxValues = {
 					x: infoX.boxX || 0,
 					y: infoY.boxY + scrollY || 0,

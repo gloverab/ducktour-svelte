@@ -6,8 +6,9 @@ export interface IAppDetailsPrivate {
 }
 
 export interface IAppearancePrivate {
-  defaultPaddingX: number
-  defaultPaddingY: number
+  highlightPaddingX: number
+  highlightPaddingY: number
+  highlightRadius: number
   overlayOpacity: number
   overlayFill: string
   infoBox: {

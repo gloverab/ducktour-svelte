@@ -7,8 +7,9 @@ export const defaultAppDetails: IAppDetailsPrivate = {
 }
 
 export const defaultAppearance: IAppearancePrivate = {
-  defaultPaddingX: 12,
-  defaultPaddingY: 12,
+  highlightPaddingX: 12,
+  highlightPaddingY: 12,
+  highlightRadius: 12,
   overlayOpacity: .7,
   overlayFill: "#000",
   infoBox: {
