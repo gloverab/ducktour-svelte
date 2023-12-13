@@ -481,12 +481,12 @@ export const determineScrollDown = (
 
 export const getMobileSteps = (steps: IStep[]) => {
   return steps.filter(
-    (s) => s.displayOn === 'both' || s.displayOn === 'mobile'
+    (s) => !s.displayOn || s.displayOn === 'mobile'
   )
 }
 
 export const getDesktopSteps = (steps: IStep[]) => {
   return steps.filter(
-    (s) => s.displayOn === 'both' || s.displayOn === 'desktop'
+    (s) => !s.displayOn || s.displayOn === 'desktop'
   )
 }

@@ -1,31 +1,65 @@
-# create-svelte
+# Ducktour Svelte
 
-Everything you need to build a Svelte library, powered by [`create-svelte`](https://github.com/sveltejs/kit/tree/master/packages/create-svelte).
+A lightweight and dependancy-free way to create highly-customizable product tours and walkthroughs, built from the ground up in Svelte.
 
-Read more about creating a library [in the docs](https://kit.svelte.dev/docs/packaging).
-
-## Creating a project
-
-If you're seeing this, you've probably already done this step. Congrats!
+## Install
 
 ```bash
-# create a new project in the current directory
-npm create svelte@latest
-
-# create a new project in my-app
-npm create svelte@latest my-app
+npm install ducktour --save-dev
 ```
 
-## Developing
+## Usage
 
-Once you've created a project and installed dependencies with `npm install` (or `pnpm install` or `yarn`), start a development server:
+```svelte
+<script>
+  import { onMount } from "svelte"
+	import { Ducktour } from 'ducktour'
 
-```bash
-npm run dev
+  let showTour = false
+	
+  const steps = [
+    {
+      title: 'Step 1',
+      text: 'Install Ducktour with npm',
+      id: 'step-1'
+      buttonText: 'Next'
+    },
+    {
+      title: 'Step 2',
+      text: 'Create an array of steps with IDs',
+      id: 'step-2'
+      buttonText: 'Got it!'
+    },
+    {
+      title: 'Step 3',
+      text: 'Pass the steps to the Ducktour component',
+      id: 'step-3'
+      buttonText: 'Finish'
+    }
+  ]
 
-# or start the server and open the app in a new browser tab
-npm run dev -- --open
+  const handleClose = () => {
+    showTour = false
+  }
+
+  onMount(() => {
+    showTour = true
+  })
+</script>
+
+<Ducktour
+  steps={steps}
+  close={handleClose}
+/>
 ```
+
+## Usage
+
+| Prop | Type | Description | Default |
+| ---- | ---- | ----------- | ------- |
+| steps | IStep[] | An array of steps that the tour will follow in order. | *required* |
+| close | function | A function that closes the walkthrough. | *required* |
+| appDetails | IAppDetails | An optional object that helps Ducktour render as effectively as possible in your application. | ```{ headerHeight: 100, mobileBreakpoint: 480 }``` |
 
 Everything inside `src/lib` is part of your library, everything inside `src/routes` can be used as a showcase or preview app.
 
