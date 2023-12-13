@@ -60,15 +60,15 @@ npm install ducktour --save-dev
 | `steps` | IStep[] | An array of steps that the tour will follow in order. | *required* |
 | `close` | function | A function that closes the walkthrough. | *required* |
 | `appDetails` | IAppDetails | An optional object that helps Ducktour render as effectively as possible in your application. | ```{ headerHeight: 100, mobileBreakpoint: 480 }``` |
-| `appearance` | IAppearance | Go to [Appearance](##appearance) | See [Appearance](##appearance) |
-| `behavior` | IBehavior |  | Go to [Behavior](##behavior) | See [Behavior](##behavior) |
-| `customComponents` | ICustomComponents | Go to [Custom Components](##custom-components) | See [Custom Components](##custom-components) |
+| `appearance` | IAppearance | Learn More about [Appearance](#appearance) | [Appearance Defaults](#appearance-defaults) |
+| `behavior` | IBehavior | Learn More about [Behavior](#behavior) | [Behavior Defaults](#behavior-defaults) |
+| `customComponents` | ICustomComponents | Learn More about [Custom Components](#custom-components) | None |
 
 ## Appearance
 
 An optional object used to customize the appearance of Ducktour.
 
-### Default
+### Appearance Defaults
 
 ```js
 {
@@ -90,7 +90,7 @@ An optional object used to customize the appearance of Ducktour.
 
 An optional object used to customize the appearance of Ducktour.
 
-### Default
+### Behavior Defaults
 
 ```js
 {
@@ -107,6 +107,51 @@ An optional object used to customize the appearance of Ducktour.
   }
 }
 ```
+
+## Custom Components
+
+Ducktour provides a basic customizable look for the walkthrough out of the box. You're able to apply classes to the wrapper, title, text, colors, and buttons. But if you'd like to pass in your own component, Ducktour supports that too. We've all worked with designers and companies who need everything to stay as on brand as possible.
+
+Ducktour will always pass the following props to your component:
+
+| Prop | Type | Description |
+| ---- | ---- | ----------- |
+| activeStepIndex | number | Index of the current step |
+| step | IStep | An object of the current step, containing the step information that you can display to the user. |
+| steps | IStep[] | An array of all active steps in the tour. Primarily useful for displaying the total step count. |
+| onNext | function | A function that Ducktour will use to progress to the next step when clicked. You can perform any actions you want when a user clicks your "next" button, but you must invoke this function at some point in order to move the tour forward.|
+| onBack | function | A function that Ducktour will use to regress to the previous step when clicked. You can perform any actions you want when a user clicks your "back" button, but you must invoke this function in order to move the tour back.|
+
+You can also optionally define a custom props object that will also get passed to your custom component.
+
+### Usage
+
+```svelte
+  <script>
+    import YourSpecialInfoBoxComponent from './somewhere'
+    import YourBottomComponent from './somewhere-else'
+  </script>
+
+  <Ducktour
+    ...
+    customComponents={
+      {
+        infoBox: {
+          component: YourSpecialInfoBoxComponent,
+          props: {
+            foo: "fighters", 
+            bar: "ista"
+          }
+        },
+        bottom: {
+          component: YourBottomComponent
+        }
+      }
+    }
+  >
+```
+
+
 
 ## Publishing
 
