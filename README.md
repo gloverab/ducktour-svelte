@@ -57,12 +57,22 @@ npm install ducktour --save-dev
 
 | Prop | Type | Description | Default |
 | ---- | ---- | ----------- | ------- |
-| steps | IStep[] | An array of steps that the tour will follow in order. | *required* |
-| close | function | A function that closes the walkthrough. | *required* |
-| appDetails | IAppDetails | An optional object that helps Ducktour render as effectively as possible in your application. | ```{ headerHeight: 100, mobileBreakpoint: 480 }``` |
-| appearance | IAppearance | An optional object used to customize the appearance of Ducktour. |
+| `steps` | IStep[] | An array of steps that the tour will follow in order. | *required* |
+| `close` | function | A function that closes the walkthrough. | *required* |
+| `appDetails` | IAppDetails | An optional object that helps Ducktour render as effectively as possible in your application. | ```{ headerHeight: 100, mobileBreakpoint: 480 }``` |
+| `appearance` | IAppearance | Go to [Appearance](##appearance) | See [Appearance](##appearance) |
+| `behavior` | IBehavior |  | Go to [Behavior](##behavior) | See [Behavior](##behavior) |
+| `customComponents` | ICustomComponents | Go to [Custom Components](##custom-components) | See [Custom Components](##custom-components) |
+
+## Appearance
+
+An optional object used to customize the appearance of Ducktour.
+
+### Default
+
 ```js
-{ highlightPaddingX: 12,
+{
+  highlightPaddingX: 12,
   highlightPaddingY: 12,
   highlightRadius: 12,
   overlayOpacity: .7,
@@ -75,27 +85,28 @@ npm install ducktour --save-dev
   }
 }
 ```
-|
 
-Everything inside `src/lib` is part of your library, everything inside `src/routes` can be used as a showcase or preview app.
+## Behavior
 
-## Building
+An optional object used to customize the appearance of Ducktour.
 
-To build your library:
+### Default
 
-```bash
-npm run package
+```js
+{
+  highlightPaddingX: 12,
+  highlightPaddingY: 12,
+  highlightRadius: 12,
+  overlayOpacity: .7,
+  overlayFill: "#000",
+  infoBox: {
+    backgroundColor: "#fff",
+    padding: 16,
+    maxWidth: 200,
+    minWidth: 360
+  }
+}
 ```
-
-To create a production version of your showcase app:
-
-```bash
-npm run build
-```
-
-You can preview the production build with `npm run preview`.
-
-> To deploy your app, you may need to install an [adapter](https://kit.svelte.dev/docs/adapters) for your target environment.
 
 ## Publishing
 
