@@ -13,6 +13,9 @@ const config = {
 		adapter: adapter({
 			fallback: '200.html'
 		}),
+		paths: {
+			base: process.env.NODE_ENV === 'production' ? '/ducktour-svelte' : ''
+		},
 		prerender: {
       entries: ['*'],
       handleMissingId: 'warn',
