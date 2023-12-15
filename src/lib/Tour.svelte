@@ -1,9 +1,3 @@
-<script lang="ts" context="module">
-	
-
-	
-</script>
-
 <script lang="ts">
 	import type { IAppDetailsPrivate, IAppearancePrivate, IBehaviorPrivate } from "./types/private.ts";
   import LockScroll from "./LockScroll.svelte"

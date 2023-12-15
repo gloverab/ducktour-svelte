@@ -35,7 +35,6 @@
 			} with random text length. ${generateString(getRandomInt(10, 200))}`,
 			buttonText: 'Next',
 			id: `grid-item-${i}`,
-			displayOn: DisplayOn.Both
 		}
 	})
 
@@ -45,28 +44,24 @@
 			text: "Here we're seeing how the smart bubble responds to the placement of button 1.",
 			buttonText: 'Next',
 			id: 'btn-1',
-			displayOn: DisplayOn.Both
 		},
 		{
 			title: 'Button Two',
 			text: "Here we're seeing how the smart bubble responds to the placement of button 2.",
 			buttonText: 'Next',
 			id: 'btn-2',
-			displayOn: DisplayOn.Both
 		},
 		{
 			title: 'Button Three',
 			text: "Here we're seeing how the smart bubble responds to the placement of button 3.",
 			buttonText: 'Next',
 			id: 'btn-3',
-			displayOn: DisplayOn.Both
 		},
 		{
 			title: 'Button Four',
 			text: "Here we're seeing how the smart bubble responds to the placement of button 4.",
 			buttonText: 'Next',
 			id: 'btn-4',
-			displayOn: DisplayOn.Both
 		},
 	]
 
