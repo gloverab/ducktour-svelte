@@ -9,19 +9,18 @@
   import SvelteLogo from '$img/svelte-horizontal.svg?raw';
 
   import { Button, KitDocs, KitDocsLayout, createSidebarContext } from '@svelteness/kit-docs';
+	import { base } from '$app/paths';
 
   /** @type {import('./$types').LayoutData} */
   export let data;
 
-  $: console.log(data)
   $: ({ meta, sidebar } = data);
 
   /** @type {import('@svelteness/kit-docs').NavbarConfig} */
   const navbar = {
-    links: [{ title: 'Documentation', slug: '/docs', match: /\/docs/ }],
-  };
+    links: [{ title: 'Documentation', slug: `${base}/docs`, match: /\/docs/ }],
 
-  console.log(navbar)
+  };
 
   const { activeCategory } = createSidebarContext(sidebar);
 
@@ -41,10 +40,16 @@
   {/key}
 </svelte:head>
 
+<div class=''>
+  <a href='{base}/docs/[...1]first-category/[...1]first-page'>1</a>
+  <a href='{base}/docs/[...1]first-category/[...2]second-page'>2</a>
+  <a href='{base}/docs/[...2]second-category/[...1]first-page'>3</a>
+  <a href='{base}/docs/[...2]second-category/[...2]second-page'>4</a>
+</div>
 <KitDocs {meta}>
   <KitDocsLayout {navbar} {sidebar}>
     <div class="logo" slot="navbar-left">
-      <Button href="/">
+      <Button href="{base}/">
         {@html SvelteLogo}
       </Button>
     </div>

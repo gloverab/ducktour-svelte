@@ -6,7 +6,7 @@
 	"scripts": {
 		"dev": "vite dev",
 		"build": "vite build && npm run package",
-		"deploy": "npm run build && npx gh-pages -d build -t true",
+		"deploy": "npx gh-pages -d build -t true",
 		"preview": "vite preview",
 		"package": "svelte-kit sync && svelte-package && publint",
 		"prepublishOnly": "npm run package",
@@ -28,7 +28,7 @@
 		"!dist/**/*.spec.*"
 	],
 	"peerDependencies": {
-		"svelte": "^3.46.0"
+		"svelte": "^3.46.0 || ^4.0.0"
 	},
 	"devDependencies": {
 		"@iconify-json/ri": "^1.1.15",

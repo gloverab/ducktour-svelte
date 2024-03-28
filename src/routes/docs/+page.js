@@ -1,8 +1,9 @@
-import { redirect } from '@sveltejs/kit';
+// import { base } from '$app/paths';
+// import { redirect } from '@sveltejs/kit';
 
-export const prerender = true;
+// export const prerender = true;
 
-/** @type {import('./$types').PageLoad} */
-export function load() {
-  throw redirect(307, '/docs/first-category/first-page');
-}
+// /** @type {import('./$types').PageLoad} */
+// export function load() {
+//   throw redirect(307, `${base}/docs/first-category/first-page`);
+// }
