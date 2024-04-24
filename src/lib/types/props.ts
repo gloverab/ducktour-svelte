@@ -49,6 +49,7 @@ export interface ICustomInfoBoxComponent {
     steps: IStep[]
     onNext: () => void
     onBack: () => void
+    onClose: () => void
   }>
   props?: object
 }

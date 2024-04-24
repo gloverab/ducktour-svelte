@@ -9,6 +9,7 @@
   export let element: HTMLElement
   export let handleClickNext: () => void
   export let handleClickBack: () => void
+  export let close: () => void
   export let infoBoxValues: any
   export let showInfoBox = false
   export let stepToDisplay: any
@@ -67,6 +68,7 @@
         steps={stepsToUse}
         onNext={handleClickNext}
         onBack={handleClickBack}
+        onClose={close}
       />
     {:else}
       <p class="font-medium">{stepToDisplay?.title}</p>

@@ -509,6 +509,7 @@
 					{_customComponents}
 					{handleClickNext}
 					{handleClickBack}
+					{close}
 					{infoBoxValues}
 					{showInfoBox}
 					{stepToDisplay}
